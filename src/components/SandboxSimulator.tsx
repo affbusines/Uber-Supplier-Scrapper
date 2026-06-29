@@ -144,7 +144,7 @@ export default function SandboxSimulator() {
       className="grid grid-cols-1 lg:grid-cols-12 gap-6"
     >
       {/* 1. MOCK INTERACTIVE UBER SUPPLIER PORTAL WINDOW */}
-      <div className="lg:col-span-12 xl:col-span-7 bg-[var(--text-strong)] border border-zinc-800 rounded-lg overflow-hidden flex flex-col shadow-lg">
+      <div className="lg:col-span-12 xl:col-span-7 bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden flex flex-col shadow-lg">
         {/* Portal Header */}
         <div className="bg-black px-4 py-3 border-b border-zinc-900 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -159,8 +159,8 @@ export default function SandboxSimulator() {
         </div>
 
         {/* Address bar URL bar */}
-        <div className="bg-[var(--text-strong)]/40 p-2 border-b border-zinc-900 flex items-center gap-2">
-          <div className="bg-[var(--text-strong)] border border-zinc-800 text-[var(--text-muted)] font-mono text-[10.5px] rounded px-3 py-1 flex-1 flex items-center gap-2">
+        <div className="bg-zinc-900/40 p-2 border-b border-zinc-900 flex items-center gap-2">
+          <div className="bg-zinc-900 border border-zinc-800 text-[var(--text-muted)] font-mono text-[10.5px] rounded px-3 py-1 flex-1 flex items-center gap-2">
             <span className="text-[var(--brand-primary)] select-none">🔐</span>
             <span>https://supplier.uber.com/orgs/689c1d-bd22/drivers</span>
           </div>
@@ -195,11 +195,11 @@ export default function SandboxSimulator() {
           </div>
 
           {/* Table Container */}
-          <div className="border border-zinc-800 rounded overflow-hidden divide-y divide-zinc-900 bg-[var(--text-strong)]/20">
+          <div className="border border-zinc-800 rounded overflow-hidden divide-y divide-zinc-900 bg-zinc-900/20">
             {drivers.map((drv, idx) => (
               <div
                 key={drv.uuid}
-                className="flex items-center justify-between p-3 sm:p-4 hover:bg-[var(--text-strong)]/40 transition gap-4"
+                className="flex items-center justify-between p-3 sm:p-4 hover:bg-zinc-900/40 transition gap-4"
               >
                 <div className="flex items-center gap-3">
                   <img
@@ -247,7 +247,7 @@ export default function SandboxSimulator() {
 
           {/* Form Editor Modal/Overlay when active */}
           {editingIndex !== null && (
-            <div className="bg-[var(--text-strong)] border border-zinc-800 p-4 rounded-lg space-y-3">
+            <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-lg space-y-3">
               <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
                 <PenTool size={12} className="text-[var(--brand-primary)]" />
                 <span>Quick Update: {drivers[editingIndex].name}</span>
@@ -266,7 +266,7 @@ export default function SandboxSimulator() {
                         email: e.target.value,
                       }))
                     }
-                    className="w-full bg-[var(--text-strong)] border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -282,7 +282,7 @@ export default function SandboxSimulator() {
                         phone: e.target.value,
                       }))
                     }
-                    className="w-full bg-[var(--text-strong)] border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -298,7 +298,7 @@ export default function SandboxSimulator() {
                         trips: Number(e.target.value),
                       }))
                     }
-                    className="w-full bg-[var(--text-strong)] border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
               </div>
@@ -336,7 +336,7 @@ export default function SandboxSimulator() {
               সিমুলেট করুন!
             </p>
 
-            <div className="relative bg-[var(--text-strong)] border border-zinc-800 p-4 rounded overflow-auto h-72 text-zinc-100">
+            <div className="relative bg-zinc-950 border border-zinc-800 p-4 rounded overflow-auto h-72 text-zinc-100">
               <pre className="font-mono text-[10px] leading-relaxed text-[var(--brand-primary)] whitespace-pre">
                 {currentGeneratedHtml}
               </pre>

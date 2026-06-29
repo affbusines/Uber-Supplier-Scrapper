@@ -668,7 +668,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
 
           {/* Sync Progress Status Element */}
           {syncState.running ? (
-            <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm space-y-5 animate-pulse-once">
+            <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm space-y-5 animate-pulse-once">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
                 <div className="flex items-center gap-3">
                   <RefreshCw
@@ -704,7 +704,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 </div>
 
                 {/* Custom Elegant Progress Bar */}
-                <div className="w-full h-2.5 bg-[var(--bg-surface)] dark:bg-[var(--text-strong)] rounded-full overflow-hidden border border-[var(--border-base)]/40 ">
+                <div className="w-full h-2.5 bg-[var(--bg-surface)] rounded-full overflow-hidden border border-[var(--border-base)]/40 ">
                   <div
                     className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-500 shadow-sm"
                     style={{ width: `${syncState.progress}%` }}
@@ -713,7 +713,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
               </div>
             </div>
           ) : (
-            <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm space-y-5 flex flex-col justify-between">
+            <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm space-y-5 flex flex-col justify-between">
               <div>
                 <h3 className="font-bold text-sm tracking-tight text-[var(--text-strong)] flex items-center gap-1.5 mb-1.5">
                   <Clock size={16} className="text-[var(--text-muted)]" />
@@ -857,7 +857,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           )}
 
           {/* Terminal Logs simulator console - ALWAYS VISIBLE */}
-          <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm">
+          <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm">
             <div className="space-y-1.5">
               <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] block font-mono">
                 Live Sync Diagnostics Output:
@@ -1010,7 +1010,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
             </div>
           </div>
 
-          <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] rounded-lg p-6 border border-[var(--border-base)] shadow-sm space-y-4">
+          <div className="bg-[var(--bg-base)] rounded-lg p-6 border border-[var(--border-base)] shadow-sm space-y-4">
             <div>
               <label
                 className="block text-[var(--text-base)] font-semibold text-sm mb-1.5"
@@ -1024,7 +1024,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 onChange={(e) => setHtmlInput(e.target.value)}
                 placeholder='<div role="rowgroup" class="drivers-rows"> ... </div>'
                 rows={8}
-                className="w-full text-[var(--text-base)] bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] outline-none"
+                className="w-full text-[var(--text-base)] bg-[var(--bg-base)] border border-[var(--border-base)] rounded p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] outline-none"
               ></textarea>
             </div>
 
@@ -1110,9 +1110,9 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           {parsingResult && parsingResult.length > 0 && (
             <div
               id="parsing-result-preview-panel"
-              className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] rounded-lg border border-[var(--border-base)] shadow-sm overflow-hidden animate-fade-in-up"
+              className="bg-[var(--bg-base)] rounded-lg border border-[var(--border-base)] shadow-sm overflow-hidden animate-fade-in-up"
             >
-              <div className="px-6 py-4 bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border-b border-zinc-150 flex items-center justify-between">
+              <div className="px-6 py-4 bg-[var(--bg-base)] border-b border-zinc-150 flex items-center justify-between">
                 <h3 className="text-[var(--text-base)] font-bold text-sm">
                   Extracted Drivers Preview ({parsingResult.length} Found)
                 </h3>
@@ -1132,7 +1132,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                         photoUrl={drv.photo_url}
                         name={drv.name}
                         size={40}
-                        className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] shrink-0"
+                        className="bg-[var(--bg-base)] shrink-0"
                       />
                       <div>
                         <h4 className="text-[var(--text-strong)] font-bold text-sm leading-tight">
@@ -1174,7 +1174,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 ))}
               </div>
 
-              <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] px-6 py-4 border-t border-zinc-150 flex items-center justify-end">
+              <div className="bg-[var(--bg-base)] px-6 py-4 border-t border-zinc-150 flex items-center justify-end">
                 <button
                   onClick={handleSync}
                   disabled={isSyncing}
@@ -1238,7 +1238,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
             </div>
           </div>
 
-          <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] rounded-lg p-6 border border-[var(--border-base)] shadow-sm space-y-4 font-sans">
+          <div className="bg-[var(--bg-base)] rounded-lg p-6 border border-[var(--border-base)] shadow-sm space-y-4 font-sans">
             <div>
               <label
                 className="block text-[var(--text-base)] font-bold text-sm mb-1.5"
@@ -1252,7 +1252,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={`User\nALTAF SHEIKH...\nPhone\n+880...\nEmail\n0133...`}
                 rows={8}
-                className="w-full text-[var(--text-strong)] bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] outline-none"
+                className="w-full text-[var(--text-strong)] bg-[var(--bg-base)] border border-[var(--border-base)] rounded p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] outline-none"
               ></textarea>
             </div>
 
@@ -1330,8 +1330,8 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           </div>
 
           {textParsingResult && textParsingResult.length > 0 && (
-            <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] rounded-lg border border-[var(--border-base)] shadow-sm overflow-hidden font-sans animate-fade-in-up">
-              <div className="px-6 py-4 bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border-b border-zinc-150 flex items-center justify-between">
+            <div className="bg-[var(--bg-base)] rounded-lg border border-[var(--border-base)] shadow-sm overflow-hidden font-sans animate-fade-in-up">
+              <div className="px-6 py-4 bg-[var(--bg-base)] border-b border-zinc-150 flex items-center justify-between">
                 <h3 className="text-zinc-850 font-extrabold text-sm uppercase">
                   Extracted Live Preview ({textParsingResult.length} Found)
                 </h3>
@@ -1351,11 +1351,11 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                       photoUrl={drv.photo_url}
                       name={drv.name || "Unknown"}
                       size={56}
-                      className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] shrink-0"
+                      className="bg-[var(--bg-base)] border border-[var(--border-base)] shrink-0"
                     />
 
                     <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--text-strong)] p-2.5 rounded border border-zinc-100 ">
+                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--bg-surface)] p-2.5 rounded border border-zinc-100 ">
                         <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                           <Clipboard size={12} />
                           <span className="text-[9px] font-bold uppercase tracking-wider">
@@ -1367,7 +1367,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                         </p>
                       </div>
 
-                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--text-strong)] p-2.5 rounded border border-zinc-100 ">
+                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--bg-surface)] p-2.5 rounded border border-zinc-100 ">
                         <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                           <Smartphone size={12} />
                           <span className="text-[9px] font-bold uppercase tracking-wider">
@@ -1379,7 +1379,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                         </p>
                       </div>
 
-                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--text-strong)] p-2.5 rounded border border-zinc-100 ">
+                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--bg-surface)] p-2.5 rounded border border-zinc-100 ">
                         <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                           <Mail size={12} />
                           <span className="text-[9px] font-bold uppercase tracking-wider">
@@ -1391,7 +1391,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                         </p>
                       </div>
 
-                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--text-strong)] p-2.5 rounded border border-zinc-100 ">
+                      <div className="space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--bg-surface)] p-2.5 rounded border border-zinc-100 ">
                         <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                           <Hash size={12} />
                           <span className="text-[9px] font-bold uppercase tracking-wider">
@@ -1403,7 +1403,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                         </p>
                       </div>
 
-                      <div className="sm:col-span-2 lg:col-span-4 space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--text-strong)] p-2 rounded border border-zinc-100 ">
+                      <div className="sm:col-span-2 lg:col-span-4 space-y-1 bg-[var(--bg-base)]/60 dark:bg-[var(--bg-surface)] p-2 rounded border border-zinc-100 ">
                         <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
                           Generated System ID
                         </span>
@@ -1416,7 +1416,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 ))}
               </div>
 
-              <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] px-6 py-4 border-t border-zinc-150 flex items-center justify-end">
+              <div className="bg-[var(--bg-base)] px-6 py-4 border-t border-zinc-150 flex items-center justify-end">
                 <button
                   onClick={handleSyncText}
                   disabled={isSyncing}

@@ -268,7 +268,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 1. REWARD SETTINGS BLOCK */}
-        <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
           <div className="p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3">
               <div className="bg-[var(--brand-primary)] text-black p-1.5 rounded">
@@ -304,7 +304,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                   onChange={(e) =>
                     setRewardCycle(Math.max(1, parseInt(e.target.value) || 1))
                   }
-                  className="w-32 px-3 py-2 text-center text-sm font-mono font-bold bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none"
+                  className="w-32 px-3 py-2 text-center text-sm font-mono font-bold bg-[var(--bg-base)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none"
                 />
                 <span className="text-xs text-[var(--text-muted)] dark:text-[var(--text-muted)]">
                   trips per target cycle
@@ -317,7 +317,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
             </div>
           </div>
 
-          <div className="p-4 bg-[var(--bg-base)] dark:bg-[var(--text-strong)]/40 border-t border-zinc-100 flex justify-end">
+          <div className="p-4 bg-[var(--bg-base)]/40 border-t border-zinc-100 flex justify-end">
             <button
               onClick={handleSaveRewardSettings}
               className="px-4 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:hover:bg-[var(--bg-subtle)] dark:text-[var(--text-strong)] rounded text-xs font-bold font-sans transition flex items-center gap-1.5 cursor-pointer selection:bg-transparent"
@@ -329,7 +329,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
         </div>
 
         {/* 2. NOTIFICATION SETTINGS BLOCK */}
-        <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
           <div className="p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3">
               <div className="bg-[var(--brand-primary)] text-black p-1.5 rounded">
@@ -356,7 +356,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                   className={`px-3 py-1 rounded text-[10px] font-black tracking-wide transition cursor-pointer ${
                     rewardAlert
                       ? "bg-emerald-50 text-emerald-800 border border-emerald-200 "
-                      : "bg-[var(--bg-surface)] text-[var(--text-muted)] dark:bg-[var(--text-strong)] dark:text-[var(--text-muted)] border border-transparent"
+                      : "bg-[var(--bg-surface)] text-[var(--text-muted)] dark:bg-[var(--bg-base)] dark:text-[var(--text-muted)] border border-transparent"
                   }`}
                 >
                   {rewardAlert ? "✅ ON" : "OFF"}
@@ -368,7 +368,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
               </p>
 
               {rewardAlert && (
-                <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] rounded p-2.5 space-y-2">
+                <div className="bg-[var(--bg-base)] rounded p-2.5 space-y-2">
                   <span className="text-[10px] font-bold text-[var(--text-muted)] dark:text-[var(--text-muted)] uppercase tracking-wide">
                     Alert Intervals:
                   </span>
@@ -380,7 +380,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                         className={`px-2.5 py-1 text-xs font-mono font-bold rounded flex items-center gap-1 border transition cursor-pointer ${
                           thresholds.includes(lvl)
                             ? "bg-black text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:text-[var(--text-strong)] border-black "
-                            : "bg-[var(--bg-base)] dark:bg-[var(--text-strong)] text-zinc-650 border-[var(--border-base)] "
+                            : "bg-[var(--bg-base)] text-zinc-650 border-[var(--border-base)] "
                         }`}
                       >
                         <span
@@ -411,7 +411,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                   className={`px-3 py-1 rounded text-[10px] font-black tracking-wide transition cursor-pointer ${
                     syncReminder
                       ? "bg-emerald-50 text-emerald-800 border border-emerald-200 "
-                      : "bg-[var(--bg-surface)] text-[var(--text-muted)] dark:bg-[var(--text-strong)] dark:text-[var(--text-muted)] border border-transparent"
+                      : "bg-[var(--bg-surface)] text-[var(--text-muted)] dark:bg-[var(--bg-base)] dark:text-[var(--text-muted)] border border-transparent"
                   }`}
                 >
                   {syncReminder ? "✅ ON" : "OFF"}
@@ -423,7 +423,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
               </p>
 
               {syncReminder && (
-                <div className="bg-[var(--bg-base)] dark:bg-[var(--text-strong)] rounded p-2.5 space-y-2">
+                <div className="bg-[var(--bg-base)] rounded p-2.5 space-y-2">
                   <span className="text-[10px] font-bold text-[var(--text-muted)] dark:text-[var(--text-muted)] uppercase tracking-wide">
                     Sync Interval Target:
                   </span>
@@ -435,7 +435,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                         className={`py-1 rounded text-xs font-bold transition border cursor-pointer text-center ${
                           syncReminderHours === opt.value
                             ? "bg-black text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:text-[var(--text-strong)] border-black font-black"
-                            : "bg-[var(--bg-base)] dark:bg-[var(--text-strong)] text-zinc-650 border-[var(--border-base)] "
+                            : "bg-[var(--bg-base)] text-zinc-650 border-[var(--border-base)] "
                         }`}
                       >
                         {opt.label}
@@ -452,7 +452,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
             </div>
           </div>
 
-          <div className="p-4 bg-[var(--bg-base)] dark:bg-[var(--text-strong)]/40 border-t border-zinc-100 flex justify-end">
+          <div className="p-4 bg-[var(--bg-base)]/40 border-t border-zinc-100 flex justify-end">
             <button
               onClick={handleSaveNotificationSettings}
               className="px-4 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:hover:bg-[var(--bg-subtle)] dark:text-[var(--text-strong)] rounded text-xs font-bold font-sans transition flex items-center gap-1.5 cursor-pointer selection:bg-transparent"
@@ -464,7 +464,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
         </div>
 
         {/* AUTOMATED AUTO SYNC SETTINGS BLOCK */}
-        <div className="md:col-span-2 bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+        <div className="md:col-span-2 bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
           <div className="p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3">
               <div className="bg-[var(--brand-primary)] text-black p-1.5 rounded">
@@ -498,7 +498,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                   placeholder="your-email@example.com"
                   value={uberEmail}
                   onChange={(e) => setUberEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none font-mono"
+                  className="w-full px-3 py-2 text-xs bg-[var(--bg-base)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none font-mono"
                 />
               </div>
 
@@ -513,7 +513,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                     placeholder="Enter account password"
                     value={uberPassword}
                     onChange={(e) => setUberPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-10 text-xs bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none font-mono font-bold"
+                    className="w-full px-3 py-2 pr-10 text-xs bg-[var(--bg-base)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none font-mono font-bold"
                   />
                   <button
                     type="button"
@@ -535,7 +535,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                   placeholder="your-org-id"
                   value={uberOrgId}
                   onChange={(e) => setUberOrgId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none font-mono"
+                  className="w-full px-3 py-2 text-xs bg-[var(--bg-base)] border border-[var(--border-base)] rounded focus:ring-1 focus:ring-black outline-none font-mono"
                 />
               </div>
             </div>
@@ -547,7 +547,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
             </div>
           </div>
 
-          <div className="p-4 bg-[var(--bg-base)] dark:bg-[var(--text-strong)]/40 border-t border-zinc-100 flex justify-end gap-3">
+          <div className="p-4 bg-[var(--bg-base)]/40 border-t border-zinc-100 flex justify-end gap-3">
             <button
               onClick={handleTestCredentials}
               disabled={isTestingLogin}
@@ -575,7 +575,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
         </div>
 
         {/* 3. CORE INTERFACING PREFERENCE */}
-        <div className="md:col-span-2 bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden p-5 space-y-4">
+        <div className="md:col-span-2 bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden p-5 space-y-4">
           <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3">
             <div className="bg-[var(--brand-primary)] text-black p-1.5 rounded">
               <Shield size={18} />
@@ -596,7 +596,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
             adapted directly from corporate compliance regulations.
           </p>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 bg-[var(--bg-base)] dark:bg-[var(--text-strong)]/40 p-4 rounded border border-[var(--border-base)]/50 ">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 bg-[var(--bg-base)]/40 p-4 rounded border border-[var(--border-base)]/50 ">
             <div>
               <span className="text-xs font-bold block">
                 App Color Token Preference
@@ -609,7 +609,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
 
             <button
               onClick={toggleAppThemeInSettings}
-              className="px-3.5 py-1.5 bg-[var(--bg-base)] dark:bg-[var(--text-strong)] border border-[var(--border-base)] rounded hover:bg-[var(--bg-base)] dark:hover:bg-[var(--text-strong)] shadow-sm transition flex items-center gap-2 text-xs font-semibold max-w-max cursor-pointer text-[var(--text-base)] "
+              className="px-3.5 py-1.5 bg-[var(--bg-base)] border border-[var(--border-base)] rounded hover:bg-[var(--bg-base)] dark:hover:bg-[var(--text-strong)] shadow-sm transition flex items-center gap-2 text-xs font-semibold max-w-max cursor-pointer text-[var(--text-base)] "
             >
               {theme === "dark" ? (
                 <>

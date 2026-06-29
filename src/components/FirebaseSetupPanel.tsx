@@ -205,7 +205,7 @@ service cloud.firestore {
               নিম্নের সিকিউরিটি গেট রুলস ডিফাইন করা আছে।
             </p>
 
-            <div className="bg-[var(--text-strong)] rounded p-3 text-zinc-100 text-[10.5px] font-mono whitespace-pre overflow-x-auto border border-zinc-800">
+            <div className="bg-zinc-950 rounded p-3 text-zinc-100 text-[10.5px] font-mono whitespace-pre overflow-x-auto border border-zinc-800">
               {firestoreRulesSample}
             </div>
           </div>

@@ -18,8 +18,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)] dark:bg-[var(--text-strong)] p-4 transition-colors duration-200">
-      <div className="w-full max-w-md bg-[var(--bg-base)] dark:bg-[var(--text-strong)] rounded-2xl shadow-xl border border-[var(--border-base)] p-8 flex flex-col items-center text-center animate-fade-in relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)] p-4 transition-colors duration-200">
+      <div className="w-full max-w-md bg-[var(--bg-base)] rounded-2xl shadow-xl border border-[var(--border-base)] p-8 flex flex-col items-center text-center animate-fade-in relative overflow-hidden">
         {/* Background glow effects */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-primary)]/10 dark:bg-[var(--brand-primary)]/5 rounded-full blur-3xl translate-x-10 -translate-y-10 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-[var(--brand-primary)]/10 dark:bg-[var(--brand-primary)]/5 rounded-full blur-3xl -translate-x-10 translate-y-10 pointer-events-none"></div>
