@@ -139,7 +139,7 @@ service cloud.firestore {
               <button
                 onClick={handleLogin}
                 id="btn-trigger-login"
-                className="w-full sm:w-auto px-6 py-2.5 bg-black hover:bg-white/10 text-[var(--bg-base)] font-bold text-xs rounded transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 bg-black hover:bg-white/10 text-white font-bold text-xs rounded transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn size={13} />
                 <span>Access Team Console</span>

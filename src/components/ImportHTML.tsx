@@ -489,7 +489,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           }}
           className={`py-2.5 px-5 font-bold text-xs uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
             activeImportTab === "auto"
-              ? "border-[var(--brand-primary)] text-[var(--text-strong)] dark:text-[var(--bg-base)] font-black"
+              ? "border-[var(--brand-primary)] text-[var(--text-strong)] dark:text-[var(--text-strong)] font-black"
               : "border-transparent text-[var(--text-muted)] hover:text-zinc-650 "
           }`}
         >
@@ -513,7 +513,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           }}
           className={`py-2.5 px-5 font-bold text-xs uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
             activeImportTab === "html"
-              ? "border-[var(--brand-primary)] text-[var(--text-strong)] dark:text-[var(--bg-base)] font-black"
+              ? "border-[var(--brand-primary)] text-[var(--text-strong)] dark:text-[var(--text-strong)] font-black"
               : "border-transparent text-[var(--text-muted)] hover:text-zinc-650 "
           }`}
         >
@@ -530,7 +530,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           }}
           className={`py-2.5 px-5 font-bold text-xs uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
             activeImportTab === "text"
-              ? "border-[var(--brand-primary)] text-[var(--text-strong)] dark:text-[var(--bg-base)] font-black"
+              ? "border-[var(--brand-primary)] text-[var(--text-strong)] dark:text-[var(--text-strong)] font-black"
               : "border-transparent text-[var(--text-muted)] hover:text-zinc-650 "
           }`}
         >
@@ -554,7 +554,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
               </p>
             </div>
           )}
-          <div className="bg-black text-[var(--bg-base)] rounded-lg p-6 border border-zinc-850 relative overflow-hidden">
+          <div className="bg-black text-white rounded-lg p-6 border border-zinc-850 relative overflow-hidden">
             <div className="absolute right-0 top-0 text-[var(--brand-primary)] opacity-5 pointer-events-none transform translate-x-12 -translate-y-12">
               <RefreshCw
                 size={240}
@@ -913,7 +913,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
       ) : activeImportTab === "html" ? (
         // --- HTML IMPORT TAB PANEL ---
         <div id="html-import-panel" className="space-y-6">
-          <div className="bg-black text-[var(--bg-base)] rounded-lg p-6 border border-zinc-800 relative overflow-hidden">
+          <div className="bg-black text-white rounded-lg p-6 border border-zinc-800 relative overflow-hidden">
             <div className="absolute right-0 top-0 text-[var(--brand-primary)] opacity-5 pointer-events-none transform translate-x-12 -translate-y-12">
               <Clipboard size={220} />
             </div>
@@ -1086,7 +1086,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
               <button
                 onClick={handleParse}
                 id="btn-trigger-parse"
-                className="px-5 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] font-medium text-sm rounded transition cursor-pointer"
+                className="px-5 py-2 bg-black hover:bg-white/10 text-white font-medium text-sm rounded transition cursor-pointer"
               >
                 Extract Driver Data
               </button>
@@ -1194,7 +1194,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
       ) : (
         // --- PLAIN TEXT PASTING METHOD TAB PANEL ---
         <div id="text-import-panel" className="space-y-6">
-          <div className="bg-black text-[var(--bg-base)] rounded-lg p-6 border border-zinc-800 relative overflow-hidden font-sans">
+          <div className="bg-black text-white rounded-lg p-6 border border-zinc-800 relative overflow-hidden font-sans">
             <div className="absolute right-0 top-0 text-[var(--brand-primary)] opacity-5 pointer-events-none transform translate-x-12 -translate-y-12">
               <FileText size={220} />
             </div>
@@ -1309,7 +1309,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleParseText}
-                className="px-5 py-2 bg-black hover:bg-zinc-850 text-[var(--bg-base)] font-bold text-sm rounded transition cursor-pointer"
+                className="px-5 py-2 bg-black hover:bg-zinc-850 text-white font-bold text-sm rounded transition cursor-pointer"
               >
                 Extract Driver Details
               </button>

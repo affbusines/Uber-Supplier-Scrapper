@@ -346,7 +346,7 @@ export default function SandboxSimulator() {
           <div className="flex items-center gap-2.5 pt-4 border-t border-zinc-100">
             <button
               onClick={handleCopy}
-              className="w-full py-2.5 px-4 bg-black hover:bg-white/10 text-[var(--bg-base)] font-bold text-xs rounded transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 px-4 bg-black hover:bg-white/10 text-white font-bold text-xs rounded transition flex items-center justify-center gap-2 cursor-pointer"
             >
               {copied ? (
                 <>

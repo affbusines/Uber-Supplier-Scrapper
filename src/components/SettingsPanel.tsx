@@ -320,7 +320,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
           <div className="p-4 bg-[var(--bg-base)] dark:bg-[var(--text-strong)]/40 border-t border-zinc-100 flex justify-end">
             <button
               onClick={handleSaveRewardSettings}
-              className="px-4 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:hover:bg-[var(--bg-subtle)] rounded text-xs font-bold font-sans transition flex items-center gap-1.5 cursor-pointer selection:bg-transparent"
+              className="px-4 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:hover:bg-[var(--bg-subtle)] dark:text-[var(--text-strong)] rounded text-xs font-bold font-sans transition flex items-center gap-1.5 cursor-pointer selection:bg-transparent"
             >
               <Save size={14} />
               <span>💾 Save Default</span>
@@ -379,7 +379,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                         onClick={() => toggleThreshold(lvl)}
                         className={`px-2.5 py-1 text-xs font-mono font-bold rounded flex items-center gap-1 border transition cursor-pointer ${
                           thresholds.includes(lvl)
-                            ? "bg-black text-[var(--bg-base)] dark:bg-[var(--bg-base)] border-black "
+                            ? "bg-black text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:text-[var(--text-strong)] border-black "
                             : "bg-[var(--bg-base)] dark:bg-[var(--text-strong)] text-zinc-650 border-[var(--border-base)] "
                         }`}
                       >
@@ -434,7 +434,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                         onClick={() => setSyncReminderHours(opt.value)}
                         className={`py-1 rounded text-xs font-bold transition border cursor-pointer text-center ${
                           syncReminderHours === opt.value
-                            ? "bg-black text-[var(--bg-base)] dark:bg-[var(--bg-base)] border-black font-black"
+                            ? "bg-black text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:text-[var(--text-strong)] border-black font-black"
                             : "bg-[var(--bg-base)] dark:bg-[var(--text-strong)] text-zinc-650 border-[var(--border-base)] "
                         }`}
                       >
@@ -455,7 +455,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
           <div className="p-4 bg-[var(--bg-base)] dark:bg-[var(--text-strong)]/40 border-t border-zinc-100 flex justify-end">
             <button
               onClick={handleSaveNotificationSettings}
-              className="px-4 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:hover:bg-[var(--bg-subtle)] rounded text-xs font-bold font-sans transition flex items-center gap-1.5 cursor-pointer selection:bg-transparent"
+              className="px-4 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:hover:bg-[var(--bg-subtle)] dark:text-[var(--text-strong)] rounded text-xs font-bold font-sans transition flex items-center gap-1.5 cursor-pointer selection:bg-transparent"
             >
               <Save size={14} />
               <span>💾 Save Preferences</span>
