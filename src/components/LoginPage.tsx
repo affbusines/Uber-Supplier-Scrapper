@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { logInWithGoogle } from "../firebase";
 import { LogIn, ShieldAlert, Sparkles } from "lucide-react";
+import logoImg from "../assets/logo.png";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -24,12 +25,12 @@ export default function LoginPage() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-primary)]/10 dark:bg-[var(--brand-primary)]/5 rounded-full blur-3xl translate-x-10 -translate-y-10 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-[var(--brand-primary)]/10 dark:bg-[var(--brand-primary)]/5 rounded-full blur-3xl -translate-x-10 translate-y-10 pointer-events-none"></div>
 
-        <div className="w-16 h-16 bg-[var(--bg-surface)] rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-[var(--border-base)] relative z-10">
-          <ShieldAlert size={32} className="text-[var(--brand-primary)]" />
+        <div className="w-16 h-16 bg-[var(--bg-surface)] rounded-2xl overflow-hidden flex items-center justify-center mb-6 shadow-sm border border-[var(--border-base)] relative z-10">
+          <img src={logoImg} alt="Uber Fleet Sync" className="w-full h-full object-cover" />
         </div>
 
         <h1 className="text-2xl font-black text-[var(--text-strong)] tracking-tight mb-2 relative z-10">
-          Supplier Access Console
+          Uber Fleet Sync
         </h1>
         <p className="text-sm text-[var(--text-muted)] dark:text-[var(--text-muted)] mb-8 max-w-xs relative z-10 font-medium">
           Sign in to access your secure, isolated driver tracking environment.

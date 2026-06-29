@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ActiveTab } from './types';
 import Dashboard from './components/Dashboard';
+import logoImg from './assets/logo.png';
 import LoginPage from './components/LoginPage';
 import ImportHTML from './components/ImportHTML';
 import SandboxSimulator from './components/SandboxSimulator';
@@ -246,8 +247,20 @@ export default function App() {
   const renderSidebarContent = (isDrawer: boolean = false) => {
     return (
       <div className="h-full flex flex-col justify-between bg-white dark:bg-zinc-950 text-black dark:text-zinc-100 font-sans">
+        {/* App Branding Block */}
+        <div className="p-5 pt-6 pb-4 flex items-center gap-3 shrink-0 select-none border-b border-zinc-100 dark:border-zinc-900">
+          <img 
+            src={logoImg} 
+            alt="Uber Fleet Sync Logo"
+            className="w-8 h-8 rounded-lg object-cover border border-zinc-200 dark:border-zinc-800"
+          />
+          <span className="font-black text-[15.5px] tracking-tight text-black dark:text-white">
+            Uber Fleet Sync
+          </span>
+        </div>
+
         {/* Profile Info Block */}
-        <div className="p-6 pt-8 pb-6 border-b border-zinc-100 dark:border-zinc-900 flex items-center gap-3 bg-zinc-50/50 dark:bg-zinc-900/20 shrink-0">
+        <div className="p-6 pt-5 pb-6 border-b border-zinc-100 dark:border-zinc-900 flex items-center gap-3 bg-zinc-50/50 dark:bg-zinc-900/20 shrink-0">
           <img 
             src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" 
             alt="MD. SHAFIQUL ISLAM"
