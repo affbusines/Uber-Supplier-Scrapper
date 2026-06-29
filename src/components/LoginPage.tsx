@@ -1,13 +1,24 @@
 import React, { useState } from "react";
 import { logInWithGoogle } from "../firebase";
-import { LogIn, ShieldAlert, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { GithubIcon } from "@/components/github-icon";
+import { GoogleIcon } from "@/components/google-icon";
 import logoImg from "../assets/logo.png";
+import { Button } from "@/components/ui/button";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "@/components/ui/input-group";
+import { AuthDivider } from "@/components/auth-divider";
+import { AtSignIcon, ShieldAlert } from "lucide-react";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState("");
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -18,65 +29,116 @@ export default function LoginPage() {
     }
   };
 
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("Email access is disabled for this tenant. Please use Google Login.");
+  };
+
+  const handleGithubClick = () => {
+    setError("GitHub authentication is not configured for this team. Please use Google Login.");
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)] p-4 transition-colors duration-200">
-      <div className="w-full max-w-md bg-[var(--bg-base)] rounded-2xl shadow-xl border border-[var(--border-base)] p-8 flex flex-col items-center text-center animate-fade-in relative overflow-hidden">
-        {/* Background glow effects */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-primary)]/10 dark:bg-[var(--brand-primary)]/5 rounded-full blur-3xl translate-x-10 -translate-y-10 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-[var(--brand-primary)]/10 dark:bg-[var(--brand-primary)]/5 rounded-full blur-3xl -translate-x-10 translate-y-10 pointer-events-none"></div>
-
-        <div className="w-16 h-16 bg-[var(--bg-surface)] rounded-2xl overflow-hidden flex items-center justify-center mb-6 shadow-sm border border-[var(--border-base)] relative z-10">
-          <img src={logoImg} alt="Uber Fleet Sync" className="w-full h-full object-cover" />
+    <div className="relative w-full overflow-hidden md:h-screen bg-[var(--bg-base)] flex items-center justify-center">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-sm flex-col justify-between p-6 md:p-8">
+        
+        {/* Logo Section */}
+        <div className="flex justify-center pt-4">
+          <img 
+            src={logoImg} 
+            alt="Uber Fleet Sync" 
+            className="h-10 w-10 rounded-xl object-cover border border-zinc-200 dark:border-zinc-800 shadow-sm" 
+          />
         </div>
 
-        <h1 className="text-2xl font-black text-[var(--text-strong)] tracking-tight mb-2 relative z-10">
-          Uber Fleet Sync
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] dark:text-[var(--text-muted)] mb-8 max-w-xs relative z-10 font-medium">
-          Sign in to access your secure, isolated driver tracking environment.
-        </p>
-
-        {error && (
-          <div className="w-full bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-xs font-semibold mb-6 animate-shake text-left flex items-center gap-2">
-            <span className="text-lg">⚠️</span> {error}
+        {/* Form Section */}
+        <div className="fade-in slide-in-from-bottom-4 w-full animate-in space-y-4 duration-600">
+          <div className="flex flex-col space-y-1 text-center sm:text-left">
+            <h1 className="font-extrabold text-2xl tracking-tight text-black dark:text-white">
+              Uber Fleet Sync
+            </h1>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Access your secure, isolated driver tracking environment.
+            </p>
           </div>
-        )}
 
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className={`w-full relative z-10 flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl font-bold text-sm tracking-wide transition-all shadow-md overflow-hidden group ${
-            loading
-              ? "bg-[var(--bg-surface)] text-[var(--text-muted)] dark:text-[var(--text-muted)] cursor-not-allowed"
-              : "bg-[var(--text-strong)] dark:bg-[var(--bg-base)] text-[var(--bg-base)] dark:text-[var(--text-strong)] hover:scale-[1.02] active:scale-95 cursor-pointer hover:shadow-lg"
-          }`}
-        >
-          {loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-[var(--border-base)] border-t-zinc-500 dark:border-t-zinc-400 rounded-full animate-spin"></div>
-              <span>Authenticating...</span>
-            </>
-          ) : (
-            <>
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 dark:via-black/10 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none"></span>
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                className="w-5 h-5"
-                alt="Google"
-              />
-              <span>Continue with Google</span>
-              <LogIn
-                size={16}
-                className="ml-1 opacity-50 group-hover:opacity-100 transition-opacity"
-              />
-            </>
+          {error && (
+            <div className="w-full bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-xs font-semibold animate-shake text-left flex items-center gap-2">
+              <ShieldAlert size={14} className="shrink-0" />
+              <span>{error}</span>
+            </div>
           )}
-        </button>
 
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs font-mono text-[var(--text-muted)] dark:text-[var(--text-muted)] relative z-10">
-          <Sparkles size={12} className="text-[var(--brand-primary)]/70" />
-          <span>Multi-tenant Isolation Active</span>
+          <form onSubmit={handleEmailSubmit} className="space-y-2">
+            <InputGroup>
+              <InputGroupInput
+                placeholder="your.email@example.com"
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+              />
+              <InputGroupAddon align="inline-start">
+                <AtSignIcon className="size-4 text-zinc-400" />
+              </InputGroupAddon>
+            </InputGroup>
+
+            <Button className="w-full font-bold" size="sm" type="submit">
+              Continue With Email
+            </Button>
+          </form>
+
+          <AuthDivider>OR CONTINUE WITH</AuthDivider>
+
+          <div className="space-y-2">
+            <Button 
+              className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer" 
+              type="button" 
+              variant="outline"
+              disabled={loading}
+              onClick={handleGoogleLogin}
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <GoogleIcon data-icon="inline-start" />
+              )}
+              <span>{loading ? "Signing in..." : "Google"}</span>
+            </Button>
+            
+            <Button 
+              className="w-full flex items-center justify-center gap-2 font-bold cursor-pointer" 
+              type="button" 
+              variant="outline"
+              onClick={handleGithubClick}
+            >
+              <GithubIcon data-icon="inline-start" />
+              <span>GitHub</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Footer section */}
+        <p className="text-center text-zinc-500 dark:text-zinc-400 text-xs mt-6 leading-relaxed">
+          This site is protected by reCAPTCHA and the Google{" "}
+          <a
+            className="underline underline-offset-4 hover:text-primary"
+            href="https://policies.google.com/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Privacy Policy
+          </a>{" "}
+          and{" "}
+          <a
+            className="underline underline-offset-4 hover:text-primary"
+            href="https://policies.google.com/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Terms of Service
+          </a>{" "}
+          apply.
+        </p>
       </div>
     </div>
   );
