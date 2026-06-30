@@ -1399,14 +1399,26 @@ ${cardsHTML}
   const renderBulkOperationsBar = () => {
     if (selectedIds.size === 0) return null;
     return (
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-black/95 dark:bg-zinc-900/95 text-white px-6 py-4 rounded-2xl shadow-2xl border border-zinc-800 dark:border-zinc-700 flex items-center gap-5 z-40 animate-slide-up select-none max-w-[90%] md:max-w-max flex-wrap justify-between">
-        <span className="text-xs font-bold font-mono">
-          {selectedIds.size} selected
-        </span>
+      <div className="fixed bottom-0 left-0 right-0 w-full md:bottom-6 md:left-1/2 md:transform md:-translate-x-1/2 md:right-auto md:max-w-max bg-zinc-900/95 dark:bg-zinc-950/95 text-white px-4 py-3.5 pb-6 md:pb-4 md:px-6 rounded-t-2xl md:rounded-2xl shadow-2xl border-t md:border border-zinc-800 dark:border-zinc-700 flex flex-col md:flex-row md:items-center gap-3.5 md:gap-5 z-40 animate-slide-up select-none">
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#06C167] animate-pulse"></span>
+            <span className="text-xs font-black uppercase tracking-wider font-mono">
+              {selectedIds.size} {selectedIds.size === 1 ? 'Driver' : 'Drivers'} Selected
+            </span>
+          </div>
+          
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="md:hidden text-zinc-400 hover:text-white text-xs font-bold px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition"
+          >
+            Clear
+          </button>
+        </div>
         
-        <div className="hidden sm:block h-4 w-px bg-zinc-800 dark:bg-zinc-700"></div>
+        <div className="hidden md:block h-4 w-px bg-zinc-800 dark:bg-zinc-700"></div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full pb-1 -mb-1 md:pb-0 md:mb-0 w-full md:w-auto shrink-0">
           {/* Bulk Start Reward */}
           <button
             onClick={async () => {
@@ -1422,7 +1434,7 @@ ${cardsHTML}
                 }
               }
             }}
-            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-[11px] font-bold transition cursor-pointer select-none text-white border border-zinc-700"
+            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-750 dark:border-zinc-800 rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none text-white shrink-0 flex items-center gap-1.5"
           >
             🏆 Start Reward
           </button>
@@ -1440,7 +1452,7 @@ ${cardsHTML}
                 }
               }
             }}
-            className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-[11px] font-bold transition cursor-pointer select-none text-white border border-zinc-700"
+            className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-750 dark:border-zinc-800 rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none text-white shrink-0 flex items-center gap-1.5"
           >
             🔄 Reset Reward
           </button>
@@ -1458,7 +1470,7 @@ ${cardsHTML}
                 }
               }
             }}
-            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-black rounded-xl text-[11px] font-bold transition cursor-pointer select-none"
+            className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none shrink-0"
           >
             Soft Delete
           </button>
@@ -1476,7 +1488,7 @@ ${cardsHTML}
                 }
               }
             }}
-            className="px-3 py-1.5 bg-red-650 hover:bg-red-750 text-white rounded-xl text-[11px] font-bold transition cursor-pointer select-none"
+            className="px-3.5 py-2 bg-red-650 hover:bg-red-750 text-white rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none shrink-0"
           >
             Hard Delete
           </button>
@@ -1487,7 +1499,7 @@ ${cardsHTML}
               const selectedDrivers = drivers.filter(d => selectedIds.has(d.uuid));
               handleCSVExport(selectedDrivers);
             }}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-bold transition cursor-pointer select-none"
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none shrink-0 flex items-center gap-1"
           >
             📥 Export CSV
           </button>
@@ -1498,15 +1510,15 @@ ${cardsHTML}
               const selectedDrivers = drivers.filter(d => selectedIds.has(d.uuid));
               handleHTMLReportExport(selectedDrivers);
             }}
-            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition cursor-pointer select-none"
+            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none shrink-0 flex items-center gap-1"
           >
-            🪪 HTML Report (with Photos)
+            🪪 HTML Report
           </button>
         </div>
 
         <button
           onClick={() => setSelectedIds(new Set())}
-          className="text-zinc-450 hover:text-white font-extrabold text-lg leading-none cursor-pointer pl-2"
+          className="hidden md:block text-zinc-450 hover:text-white font-extrabold text-lg leading-none cursor-pointer pl-2"
         >
           &times;
         </button>
