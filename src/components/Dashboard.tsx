@@ -61,7 +61,7 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMode, setFilterMode] = useState<"all" | "active" | "inactive" | "changed" | "rewards" | "milestones" | "most_trips">("all");
+  const [filterMode, setFilterMode] = useState<"all" | "active" | "inactive" | "changed" | "rewards" | "milestones" | "most_trips" | "f10" | "f50">("all");
   const [sortBy, setSortBy] = useState<"trips_desc" | "trips_asc" | "name_asc" | "newest_desc">("trips_desc");
   
   // Sub-tabs state
@@ -82,6 +82,10 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   const [rewardTrackingDriver, setRewardTrackingDriver] = useState<Driver | null>(null);
   const [rewardCycleInput, setRewardCycleInput] = useState<number>(52);
   const [resetConfirmationDriver, setResetConfirmationDriver] = useState<Driver | null>(null);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showBulkResetModal, setShowBulkResetModal] = useState(false);
+  const [showBulkStartModal, setShowBulkStartModal] = useState(false);
+  const [bulkStartCycleSize, setBulkStartCycleSize] = useState(52);
 
   // Active Dropdown Menu index on drivers list
   const [activeMenuDriverId, setActiveMenuDriverId] = useState<string | null>(null);
@@ -217,7 +221,7 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       (drv.old_email && drv.old_email.toLowerCase().includes(q))
     );
 
-    if (filterMode === "changed") return matchesQuery && drv.has_contact_change;
+    if (filterMode === "changed") return matchesQuery && drv.has_contact_change && !drv.deleted;
     if (filterMode === "rewards") return matchesQuery && drv.reward?.active && !drv.deleted;
     if (filterMode === "milestones") {
       if (drv.deleted || !drv.reward?.active) return false;
@@ -226,10 +230,20 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       const hasF50 = currentCycleTrips >= 50 && !drv.reward.f50_done;
       return matchesQuery && (hasF10 || hasF50);
     }
+    if (filterMode === "f10") {
+      if (drv.deleted || !drv.reward?.active) return false;
+      const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
+      return matchesQuery && currentCycleTrips >= 10;
+    }
+    if (filterMode === "f50") {
+      if (drv.deleted || !drv.reward?.active) return false;
+      const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
+      return matchesQuery && currentCycleTrips >= 50;
+    }
     if (filterMode === "most_trips") return matchesQuery && drv.tip_count >= 150 && !drv.deleted;
     if (filterMode === "active") return matchesQuery && !drv.deleted;
     if (filterMode === "inactive") return matchesQuery && drv.deleted;
-    return matchesQuery;
+    return matchesQuery && !drv.deleted;
   });
 
   const sortedDrivers = [...filteredDrivers].sort((a, b) => {
@@ -513,25 +527,6 @@ ${cardsHTML}
           </div>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
-            <button 
-              onClick={() => {
-                setEditingDriver({
-                  uuid: `man_${Date.now()}`,
-                  name: "",
-                  photo_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-                  tip_count: 0,
-                  email: "",
-                  phone: "",
-                  has_contact_change: false,
-                  first_seen: new Date().toISOString(),
-                  last_updated: new Date().toISOString(),
-                });
-              }}
-              className="interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-white"
-              title="Add Driver"
-            >
-              <UserPlus size={22} className="stroke-[2.5]" />
-            </button>
             {/* Download Dropdown */}
             <div className="relative">
               <button 
@@ -588,8 +583,11 @@ ${cardsHTML}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Drivers Card */}
             <div
-              onClick={() => setFilterMode('all')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[120px] interactive-button ${
+              onClick={() => {
+                setFilterMode('all');
+                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'all' || filterMode === 'active'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
                   : 'border-zinc-150 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950'
@@ -608,8 +606,11 @@ ${cardsHTML}
 
             {/* Active Rewards Card */}
             <div
-              onClick={() => setFilterMode('rewards')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[120px] interactive-button ${
+              onClick={() => {
+                setFilterMode('rewards');
+                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'rewards'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
                   : 'border-zinc-150 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950'
@@ -624,8 +625,11 @@ ${cardsHTML}
 
             {/* Milestones Reached Card */}
             <div
-              onClick={() => setFilterMode('milestones')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[120px] interactive-button ${
+              onClick={() => {
+                setFilterMode('milestones');
+                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'milestones'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
                   : 'border-zinc-150 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950'
@@ -644,8 +648,11 @@ ${cardsHTML}
 
             {/* Contact Changes Card */}
             <div
-              onClick={() => setFilterMode('changed')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[120px] interactive-button ${
+              onClick={() => {
+                setFilterMode('changed');
+                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'changed'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
                   : 'border-zinc-150 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950'
@@ -664,7 +671,7 @@ ${cardsHTML}
           </div>
 
           {/* Toolbar */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
+          <div id="drivers-list-section" className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
               {/* Search bar */}
               <div className="relative flex-1 max-w-md">
@@ -677,17 +684,6 @@ ${cardsHTML}
                   className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl p-2.5 pl-9.5 text-xs font-semibold focus:ring-1 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white"
                 />
               </div>
-
-              {/* Deleted toggle */}
-              <label className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={showDeleted}
-                  onChange={(e) => setShowDeleted(e.target.checked)}
-                  className="w-4 h-4 rounded border-zinc-300 text-black dark:text-white focus:ring-black dark:focus:ring-white accent-black"
-                />
-                <span>Show Deleted Drivers</span>
-              </label>
             </div>
 
             {/* Filter pills & Sort options */}
@@ -704,24 +700,24 @@ ${cardsHTML}
                   All
                 </button>
                 <button
-                  onClick={() => setFilterMode('changed')}
+                  onClick={() => setFilterMode('f10')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    filterMode === 'changed'
+                    filterMode === 'f10'
                       ? 'bg-white dark:bg-zinc-800 text-black dark:text-white shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200'
                   }`}
                 >
-                  Changed
+                  F10
                 </button>
                 <button
-                  onClick={() => setFilterMode('most_trips')}
+                  onClick={() => setFilterMode('f50')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    filterMode === 'most_trips'
+                    filterMode === 'f50'
                       ? 'bg-white dark:bg-zinc-800 text-black dark:text-white shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200'
                   }`}
                 >
-                  Most Trips
+                  F50
                 </button>
               </div>
 
@@ -801,6 +797,7 @@ ${cardsHTML}
                             onClick={() => {
                               setCurrentDriverDetail(drv);
                               setDetailTab('info');
+                              onNavigate('drivers');
                             }}
                             className="flex items-center gap-3 cursor-pointer group"
                           >
@@ -1057,6 +1054,7 @@ ${cardsHTML}
                       onClick={() => {
                         setCurrentDriverDetail(drv);
                         setDetailTab('info');
+                        onNavigate('drivers');
                       }}
                       className={`bg-white dark:bg-zinc-900 border rounded-2xl p-5 shadow-xs transition-all cursor-pointer relative interactive-button flex flex-col gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 ${
                         drv.has_contact_change ? 'border-amber-200 bg-amber-50/10 dark:bg-amber-950/10' : 'border-zinc-150 dark:border-zinc-800'
@@ -1461,19 +1459,7 @@ ${cardsHTML}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full pb-1 -mb-1 md:pb-0 md:mb-0 w-full md:w-auto shrink-0">
           {/* Bulk Start Reward */}
           <button
-            onClick={async () => {
-              const cycleSizeStr = prompt("Enter reward cycle size (default is 52 trips):", "52");
-              if (cycleSizeStr !== null) {
-                const size = parseInt(cycleSizeStr) || 52;
-                try {
-                  await bulkStartRewardTracking(Array.from(selectedIds), size);
-                  setSelectedIds(new Set());
-                  showToast("success", `Started reward tracking for ${selectedIds.size} drivers.`);
-                } catch (_) {
-                  showToast("error", "Bulk start failed.");
-                }
-              }
-            }}
+            onClick={() => setShowBulkStartModal(true)}
             className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-750 dark:border-zinc-800 rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none text-white shrink-0 flex items-center gap-1.5"
           >
             🏆 Start Reward
@@ -1481,17 +1467,7 @@ ${cardsHTML}
 
           {/* Bulk Reset Reward */}
           <button
-            onClick={async () => {
-              if (confirm("Are you sure you want to reset rewards for all selected drivers?")) {
-                try {
-                  await bulkResetReward(Array.from(selectedIds));
-                  setSelectedIds(new Set());
-                  showToast("success", `Reset rewards for ${selectedIds.size} drivers.`);
-                } catch (_) {
-                  showToast("error", "Bulk reset failed.");
-                }
-              }
-            }}
+            onClick={() => setShowBulkResetModal(true)}
             className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-750 dark:border-zinc-800 rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none text-white shrink-0 flex items-center gap-1.5"
           >
             🔄 Reset Reward
@@ -1499,38 +1475,10 @@ ${cardsHTML}
 
           {/* Bulk Delete */}
           <button
-            onClick={async () => {
-              if (confirm("আপনি কি নিশ্চিত যে আপনি নির্বাচিত ড্রাইভারদের সফট ডিলিট করতে চান?")) {
-                try {
-                  await bulkDeleteDrivers(Array.from(selectedIds), false);
-                  setSelectedIds(new Set());
-                  showToast("success", `Soft deleted ${selectedIds.size} drivers.`);
-                } catch (_) {
-                  showToast("error", "Bulk delete failed.");
-                }
-              }
-            }}
-            className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-black rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none shrink-0"
-          >
-            Soft Delete
-          </button>
-
-          {/* Bulk Hard Delete */}
-          <button
-            onClick={async () => {
-              if (confirm("সতর্কতা! আপনি কি নিশ্চিত যে আপনি নির্বাচিত ড্রাইভারদের চিরতরে ডিলিট করতে চান? এই অ্যাকশনটি রিভার্ট করা যাবে না।")) {
-                try {
-                  await bulkDeleteDrivers(Array.from(selectedIds), true);
-                  setSelectedIds(new Set());
-                  showToast("success", `Permanently deleted ${selectedIds.size} drivers.`);
-                } catch (_) {
-                  showToast("error", "Bulk hard delete failed.");
-                }
-              }
-            }}
+            onClick={() => setShowBulkDeleteModal(true)}
             className="px-3.5 py-2 bg-red-650 hover:bg-red-750 text-white rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none shrink-0"
           >
-            Hard Delete
+            Delete Selected
           </button>
 
           {/* Export to CSV */}
@@ -1579,25 +1527,6 @@ ${cardsHTML}
           </button>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
-            <button 
-              onClick={() => {
-                setEditingDriver({
-                  uuid: `man_${Date.now()}`,
-                  name: "",
-                  photo_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-                  tip_count: 0,
-                  email: "",
-                  phone: "",
-                  has_contact_change: false,
-                  first_seen: new Date().toISOString(),
-                  last_updated: new Date().toISOString(),
-                });
-              }}
-              className="interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-white"
-              title="Add Driver"
-            >
-              <UserPlus size={22} className="stroke-[2.5]" />
-            </button>
             {/* Download Dropdown */}
             <div className="relative">
               <button 
@@ -1646,55 +1575,13 @@ ${cardsHTML}
                 </>
               )}
             </div>
-            <button 
-              onClick={() => showToast("info", "Search toggled.")} 
-              className="interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-white"
-            >
-              <Search size={22} className="stroke-[2.5]" />
-            </button>
           </div>
         </header>
 
         <div className="px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto">
           <h1 className="text-4xl font-extrabold text-black dark:text-white tracking-tight leading-none">Drivers</h1>
 
-          {/* Sub-Tabs: Drivers & Invites */}
-          <div className="flex border-b border-zinc-150 dark:border-zinc-800 relative shrink-0">
-            <button
-              onClick={() => setDriversSubTab('drivers')}
-              className={`flex-1 py-3.5 text-center text-[15.5px] font-bold transition-colors select-none ${
-                driversSubTab === 'drivers' ? 'text-black dark:text-white' : 'text-zinc-500 dark:text-zinc-400'
-              }`}
-            >
-              Drivers
-            </button>
-            <button
-              onClick={() => setDriversSubTab('invites')}
-              className={`flex-1 py-3.5 text-center text-[15.5px] font-bold transition-colors select-none ${
-                driversSubTab === 'invites' ? 'text-black dark:text-white' : 'text-zinc-500 dark:text-zinc-400'
-              }`}
-            >
-              Invites
-            </button>
-            <div 
-              className="absolute bottom-0 h-[2.5px] bg-black dark:bg-white transition-all duration-300"
-              style={{
-                width: '50%',
-                left: driversSubTab === 'drivers' ? '0%' : '50%'
-              }}
-            />
-          </div>
-
-          {driversSubTab === 'invites' ? (
-            <div className="flex-1 py-16 flex flex-col items-center justify-center text-center text-zinc-400 dark:text-zinc-500 space-y-2">
-              <div className="w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-                <Mail size={20} />
-              </div>
-              <span className="text-sm font-bold text-black dark:text-white">No Pending Invites</span>
-              <p className="text-xs text-zinc-500 dark:text-zinc-450 max-w-[200px]">Send invites to new drivers to add them to your fleet portal.</p>
-            </div>
-          ) : (
-            <div className="space-y-4 flex-1 flex flex-col justify-between">
+          <div className="space-y-4 flex-1 flex flex-col justify-between">
               
               {/* Filter pills row */}
               <div className="flex items-center gap-1.5 py-1 overflow-x-auto no-scrollbar shrink-0 select-none">
@@ -1998,7 +1885,6 @@ ${cardsHTML}
               {renderTablePagination()}
 
             </div>
-          )}
         </div>
       </div>
     );
@@ -3377,6 +3263,177 @@ ${cardsHTML}
                 className="flex-1 py-2 bg-red-600 hover:bg-red-750 text-white text-xs font-bold rounded-lg"
               >
                 Yes, Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BULK DELETE CONFIRMATION MODAL */}
+      {showBulkDeleteModal && (
+        <div
+          id="bulk-delete-modal"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4"
+          onClick={() => setShowBulkDeleteModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl max-w-sm w-full p-5 space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 text-red-650 border-b border-zinc-100 dark:border-zinc-800 pb-3">
+              <Trash2 size={18} className="text-red-500" />
+              <h3 className="font-bold text-base text-black dark:text-white">Bulk Delete Drivers</h3>
+            </div>
+
+            <div className="text-xs text-zinc-650 dark:text-zinc-400">
+              <p>
+                Are you sure you want to delete <strong className="text-black dark:text-white">{selectedIds.size}</strong> selected drivers?
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={async () => {
+                  try {
+                    await bulkDeleteDrivers(Array.from(selectedIds), false);
+                    setSelectedIds(new Set());
+                    showToast("success", `Soft deleted ${selectedIds.size} drivers.`);
+                    setShowBulkDeleteModal(false);
+                  } catch (_) {
+                    showToast("error", "Bulk soft delete failed.");
+                  }
+                }}
+                className="py-2.5 bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold rounded-xl cursor-pointer transition text-center"
+              >
+                Soft Delete (Hide)
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await bulkDeleteDrivers(Array.from(selectedIds), true);
+                    setSelectedIds(new Set());
+                    showToast("success", `Permanently deleted ${selectedIds.size} drivers.`);
+                    setShowBulkDeleteModal(false);
+                  } catch (_) {
+                    showToast("error", "Bulk permanent delete failed.");
+                  }
+                }}
+                className="py-2.5 bg-red-600 hover:bg-red-750 text-white text-xs font-bold rounded-xl cursor-pointer transition text-center"
+              >
+                Hard Delete Permanently
+              </button>
+
+              <button
+                onClick={() => setShowBulkDeleteModal(false)}
+                className="py-2.5 bg-zinc-100 hover:bg-zinc-205 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white text-xs font-bold rounded-xl cursor-pointer transition text-center"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BULK RESET REWARD MODAL */}
+      {showBulkResetModal && (
+        <div
+          id="bulk-reset-modal"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4"
+          onClick={() => setShowBulkResetModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl max-w-sm w-full p-5 space-y-4 animate-scale-up text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-3xl block">🔄</span>
+            <h3 className="font-bold text-black dark:text-white text-base">Bulk Reset Rewards</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Are you sure you want to reset reward cycle progress for all <strong className="text-black dark:text-white">{selectedIds.size}</strong> selected drivers?
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowBulkResetModal(false)}
+                className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white text-xs font-bold rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await bulkResetReward(Array.from(selectedIds));
+                    setSelectedIds(new Set());
+                    showToast("success", `Reset progress for ${selectedIds.size} drivers.`);
+                    setShowBulkResetModal(false);
+                  } catch (_) {
+                    showToast("error", "Bulk reset failed.");
+                  }
+                }}
+                className="flex-1 py-2 bg-red-650 hover:bg-red-750 text-white text-xs font-bold rounded-lg transition cursor-pointer"
+              >
+                Yes, Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BULK START REWARD MODAL */}
+      {showBulkStartModal && (
+        <div
+          id="bulk-start-modal"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4"
+          onClick={() => setShowBulkStartModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl max-w-sm w-full p-5 space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3 text-[#06C167]">
+              <span className="text-lg">🏆</span>
+              <h3 className="font-bold text-base text-black dark:text-white">Start Bulk Reward Tracking</h3>
+            </div>
+
+            <div className="space-y-4 text-xs font-bold">
+              <p className="text-zinc-650 dark:text-zinc-400">
+                You are starting reward tracking for <strong className="text-black dark:text-white">{selectedIds.size}</strong> selected drivers.
+              </p>
+              
+              <div className="space-y-1.5">
+                <label className="block text-[10px] text-zinc-400 uppercase tracking-wider">
+                  Target Cycle Size (Trips):
+                </label>
+                <input
+                  type="number"
+                  value={bulkStartCycleSize}
+                  onChange={(e) => setBulkStartCycleSize(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-bold text-black dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 text-xs">
+              <button
+                onClick={() => setShowBulkStartModal(false)}
+                className="flex-1 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white font-bold rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await bulkStartRewardTracking(Array.from(selectedIds), bulkStartCycleSize);
+                    setSelectedIds(new Set());
+                    showToast("success", `Started reward tracking for ${selectedIds.size} drivers.`);
+                    setShowBulkStartModal(false);
+                  } catch (_) {
+                    showToast("error", "Bulk start failed.");
+                  }
+                }}
+                className="flex-1 py-2.5 bg-[#06C167] hover:bg-[#05a858] text-white font-extrabold rounded-xl transition shadow-sm cursor-pointer"
+              >
+                Start Tracking
               </button>
             </div>
           </div>

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ActiveTab } from './types';
 import Dashboard from './components/Dashboard';
-import logoImg from './assets/logo.png';
 import LoginPage from './components/LoginPage';
 import ImportHTML from './components/ImportHTML';
 import SandboxSimulator from './components/SandboxSimulator';
 import FirebaseSetupPanel from './components/FirebaseSetupPanel';
 import SettingsPanel from './components/SettingsPanel';
+import BankingPanel from './components/BankingPanel';
+import AccountPanel from './components/AccountPanel';
 import { listenToAuth, getNotificationSettings, getLastSyncTime, logOutUser } from './firebase';
 import { 
   Home,
@@ -34,7 +35,8 @@ import {
   BookOpen,
   Info,
   ChevronRight,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -69,6 +71,26 @@ export default function App() {
     });
     return () => unsub();
   }, []);
+
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      const saved = localStorage.getItem("displayName_" + user.uid);
+      setDisplayName(saved || user.displayName || user.email?.split("@")[0] || "Manager");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      if (user) {
+        const saved = localStorage.getItem("displayName_" + user.uid);
+        setDisplayName(saved || user.displayName || user.email?.split("@")[0] || "Manager");
+      }
+    };
+    window.addEventListener("user_profile_updated", handleUpdate);
+    return () => window.removeEventListener("user_profile_updated", handleUpdate);
+  }, [user]);
 
   const checkSyncAge = () => {
     const lastSyncStr = getLastSyncTime();
@@ -202,6 +224,38 @@ export default function App() {
             </div>
           </div>
         );
+      case 'banking':
+        return (
+          <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
+                  <Menu size={24} className="text-black dark:text-white" />
+                </button>
+                <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Banking Logs</h1>
+              </div>
+            </header>
+            <div className="p-4 sm:p-6 max-w-4xl w-full mx-auto">
+              <BankingPanel />
+            </div>
+          </div>
+        );
+      case 'account':
+        return (
+          <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
+                  <Menu size={24} className="text-black dark:text-white" />
+                </button>
+                <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">My Account</h1>
+              </div>
+            </header>
+            <div className="p-4 sm:p-6 w-full mx-auto">
+              <AccountPanel user={user} />
+            </div>
+          </div>
+        );
       case 'settings':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
@@ -248,12 +302,10 @@ export default function App() {
     return (
       <div className="h-full flex flex-col justify-between bg-white dark:bg-zinc-950 text-black dark:text-zinc-100 font-sans">
         {/* App Branding Block */}
-        <div className="p-5 pt-6 pb-4 flex items-center gap-3 shrink-0 select-none border-b border-zinc-100 dark:border-zinc-900">
-          <img 
-            src={logoImg} 
-            alt="Uber Fleet Sync Logo"
-            className="w-8 h-8 rounded-lg object-cover border border-zinc-200 dark:border-zinc-800"
-          />
+        <div className="p-5 pt-6 pb-4 flex items-center gap-3 shrink-0 select-none border-b border-zinc-150 dark:border-zinc-900">
+          <div className="w-8 h-8 rounded-lg bg-[#06C167] text-white flex items-center justify-center font-black shadow-sm shrink-0">
+            <RefreshCw size={15} />
+          </div>
           <span className="font-black text-[15.5px] tracking-tight text-black dark:text-white">
             Uber Fleet Sync
           </span>
@@ -261,14 +313,14 @@ export default function App() {
 
         {/* Profile Info Block */}
         <div className="p-6 pt-5 pb-6 border-b border-zinc-100 dark:border-zinc-900 flex items-center gap-3 bg-zinc-50/50 dark:bg-zinc-900/20 shrink-0">
-          <img 
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" 
-            alt="MD. SHAFIQUL ISLAM"
-            className="w-11 h-11 rounded-full object-cover border border-zinc-200 dark:border-zinc-800"
-          />
+          <div className="w-11 h-11 rounded-full bg-[#06C167] text-white flex items-center justify-center font-black text-sm uppercase shrink-0">
+            {displayName ? displayName.charAt(0) : user?.email?.charAt(0) || "M"}
+          </div>
           <div className="min-w-0">
-            <h3 className="font-bold text-[14.5px] text-black dark:text-white tracking-tight leading-tight truncate">MD. SHAFIQUL ISLAM</h3>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold tracking-wide uppercase mt-0.5">Fleet Owner</p>
+            <h3 className="font-bold text-[14.5px] text-black dark:text-white tracking-tight leading-tight truncate">
+              {displayName || user?.email?.split("@")[0] || "Manager"}
+            </h3>
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold tracking-wide uppercase mt-0.5">Manager</p>
           </div>
         </div>
 
