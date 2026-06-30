@@ -157,7 +157,7 @@ export default function App() {
       case 'import':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -165,7 +165,7 @@ export default function App() {
                 <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Import HTML</h1>
               </div>
             </header>
-            <div className="p-6 max-w-4xl w-full mx-auto">
+            <div className="p-4 sm:p-6 max-w-4xl w-full mx-auto">
               <ImportHTML onSuccess={() => setActiveTab('drivers')} />
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function App() {
       case 'sandbox':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -181,7 +181,7 @@ export default function App() {
                 <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Simulator</h1>
               </div>
             </header>
-            <div className="p-6 w-full mx-auto">
+            <div className="p-4 sm:p-6 w-full mx-auto">
               <SandboxSimulator />
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function App() {
       case 'connection':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -197,7 +197,7 @@ export default function App() {
                 <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Database Connection</h1>
               </div>
             </header>
-            <div className="p-6 max-w-4xl w-full mx-auto">
+            <div className="p-4 sm:p-6 max-w-4xl w-full mx-auto">
               <FirebaseSetupPanel />
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function App() {
       case 'settings':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -213,7 +213,7 @@ export default function App() {
                 <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Settings</h1>
               </div>
             </header>
-            <div className="p-6 max-w-4xl w-full mx-auto">
+            <div className="p-4 sm:p-6 max-w-4xl w-full mx-auto">
               <SettingsPanel onShowToast={showToast} />
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function App() {
         const activeItem = navigationItems.find(item => item.id === activeTab);
         return (
           <div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-950">
-            <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -230,7 +230,7 @@ export default function App() {
                 <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">{activeItem?.label || 'Screen'}</h1>
               </div>
             </header>
-            <div className="flex-1 p-8 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="flex-1 p-4 sm:p-8 flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-850 flex items-center justify-center">
                 {activeItem && <activeItem.icon size={28} className="text-zinc-400" />}
               </div>
