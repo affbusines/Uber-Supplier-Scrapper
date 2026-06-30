@@ -45,7 +45,10 @@ import {
   Car,
   Download,
   Calendar,
-  Clock
+  Clock,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles
 } from "lucide-react";
 
 interface DashboardProps {
@@ -89,6 +92,42 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   // Vehicles search state
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState("");
   const [vehiclesFilterMode, setVehiclesFilterMode] = useState<"all" | "active">("all");
+
+  // ── INCOGNITO PRIVACY SHIELD STATE & HELPERS ──
+  const [privacyShield, setPrivacyShield] = useState<boolean>(
+    localStorage.getItem('privacy_shield') === 'true'
+  );
+  
+  const togglePrivacyShield = () => {
+    const nextVal = !privacyShield;
+    setPrivacyShield(nextVal);
+    localStorage.setItem('privacy_shield', String(nextVal));
+  };
+  
+  const shieldClass = (base = "") => 
+    privacyShield 
+      ? `${base} filter blur-[4.5px] select-none hover:blur-none transition-all duration-200 cursor-help` 
+      : base;
+
+  const renderIncognitoButton = () => {
+    return (
+      <button
+        onClick={togglePrivacyShield}
+        className={`interactive-button p-1.5 rounded-md transition-all duration-300 flex items-center justify-center ${
+          privacyShield 
+            ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 hover:bg-amber-200 ring-2 ring-amber-300 dark:ring-amber-800' 
+            : 'hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-white'
+        }`}
+        title={privacyShield ? "Disable Privacy Shield" : "Enable Privacy Shield (Blur Personal Data)"}
+      >
+        {privacyShield ? (
+          <ShieldAlert size={22} className="stroke-[2.5]" />
+        ) : (
+          <ShieldCheck size={22} className="stroke-[2.5]" />
+        )}
+      </button>
+    );
+  };
 
   // Mock Vehicles list data matching Screenshot 1
   const [vehicles, setVehicles] = useState([
@@ -473,6 +512,7 @@ ${cardsHTML}
             <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Drivers Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
+            {renderIncognitoButton()}
             <button 
               onClick={() => {
                 setEditingDriver({
@@ -774,7 +814,7 @@ ${cardsHTML}
                               <span className="font-extrabold text-[14px] text-black dark:text-white uppercase tracking-tight leading-tight group-hover:underline">
                                 {drv.name || "UNNAMED DRIVER"}
                               </span>
-                              <span className="text-[9.5px] text-zinc-400 font-mono tracking-wider truncate max-w-[140px] mt-0.5">
+                              <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate max-w-[140px] mt-0.5")}>
                                 {drv.uuid}
                               </span>
                             </div>
@@ -793,16 +833,16 @@ ${cardsHTML}
                             <div>
                               {drv.old_phone && drv.old_phone !== drv.phone ? (
                                 <div className="flex flex-col">
-                                  <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 font-mono text-[11.5px] font-bold inline-flex items-center gap-1 select-all w-max">
+                                  <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 font-mono text-[11.5px] font-bold inline-flex items-center gap-1 select-all w-max")}>
                                     <AlertTriangle size={10} className="text-amber-600 shrink-0" />
                                     {drv.phone}
                                   </span>
-                                  <span className="line-through text-zinc-400 dark:text-zinc-650 text-[10.5px] font-mono font-medium block mt-0.5 pl-1.5">
+                                  <span className={shieldClass("line-through text-zinc-400 dark:text-zinc-650 text-[10.5px] font-mono font-medium block mt-0.5 pl-1.5")}>
                                     Old: {drv.old_phone}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-[12px] font-mono font-bold text-zinc-800 dark:text-zinc-200 select-all">
+                                <span className={shieldClass("text-[12px] font-mono font-bold text-zinc-800 dark:text-zinc-200 select-all")}>
                                   {drv.phone || "—"}
                                 </span>
                               )}
@@ -812,16 +852,16 @@ ${cardsHTML}
                             <div>
                               {drv.old_email && drv.old_email !== drv.email ? (
                                 <div className="flex flex-col">
-                                  <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 text-[11.5px] font-bold inline-flex items-center gap-1 select-all max-w-[180px] truncate w-max">
+                                  <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 text-[11.5px] font-bold inline-flex items-center gap-1 select-all max-w-[180px] truncate w-max")}>
                                     <AlertTriangle size={10} className="text-amber-600 shrink-0" />
                                     {drv.email}
                                   </span>
-                                  <span className="line-through text-zinc-400 dark:text-zinc-500 text-[10.5px] font-medium block mt-0.5 pl-1.5 truncate max-w-[180px]">
+                                  <span className={shieldClass("line-through text-zinc-400 dark:text-zinc-500 text-[10.5px] font-medium block mt-0.5 pl-1.5 truncate max-w-[180px]")}>
                                     Old: {drv.old_email}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-[12px] font-medium text-zinc-600 dark:text-zinc-400 select-all truncate max-w-[180px] block">
+                                <span className={shieldClass("text-[12px] font-medium text-zinc-600 dark:text-zinc-400 select-all truncate max-w-[180px] block")}>
                                   {drv.email || "—"}
                                 </span>
                               )}
@@ -1043,7 +1083,7 @@ ${cardsHTML}
                             <h3 className="font-extrabold text-[15px] text-black dark:text-white tracking-tight leading-tight truncate uppercase">
                               {drv.name || "UNNAMED DRIVER"}
                             </h3>
-                            <span className="text-[9.5px] text-zinc-400 font-mono tracking-wider truncate block mt-0.5 max-w-[130px]">
+                            <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate block mt-0.5 max-w-[130px]")}>
                               {drv.uuid}
                             </span>
                           </div>
@@ -1058,30 +1098,30 @@ ${cardsHTML}
                           <div className="space-y-1">
                             {drv.old_phone && drv.old_phone !== drv.phone ? (
                               <div className="flex flex-col">
-                                <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 font-mono text-[11px] font-bold w-max">
+                                <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 font-mono text-[11px] font-bold w-max")}>
                                   {drv.phone}
                                 </span>
-                                <span className="line-through text-zinc-400 text-[9.5px] font-mono mt-0.5 pl-0.5">
+                                <span className={shieldClass("line-through text-zinc-400 text-[9.5px] font-mono mt-0.5 pl-0.5")}>
                                   Old: {drv.old_phone}
                                 </span>
                               </div>
                             ) : (
-                              <div className="text-[12px] font-mono font-bold text-zinc-800 dark:text-zinc-200 select-all">
+                              <div className={shieldClass("text-[12px] font-mono font-bold text-zinc-800 dark:text-zinc-200 select-all")}>
                                 {drv.phone || "—"}
                               </div>
                             )}
 
                             {drv.old_email && drv.old_email !== drv.email ? (
                               <div className="flex flex-col">
-                                <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 text-[11px] font-bold truncate max-w-[120px] w-max">
+                                <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 text-[11px] font-bold truncate max-w-[120px] w-max")}>
                                   {drv.email}
                                 </span>
-                                <span className="line-through text-zinc-400 text-[9.5px] mt-0.5 pl-0.5 truncate max-w-[120px]">
+                                <span className={shieldClass("line-through text-zinc-400 text-[9.5px] mt-0.5 pl-0.5 truncate max-w-[120px]")}>
                                   Old: {drv.old_email}
                                 </span>
                               </div>
                             ) : (
-                              <div className="text-[11.5px] font-medium text-zinc-600 dark:text-zinc-400 select-all truncate max-w-[120px]">
+                              <div className={shieldClass("text-[11.5px] font-medium text-zinc-600 dark:text-zinc-400 select-all truncate max-w-[120px]")}>
                                 {drv.email || "—"}
                               </div>
                             )}
@@ -1538,6 +1578,7 @@ ${cardsHTML}
             <Menu size={24} className="text-black dark:text-white" />
           </button>
           <div className="flex items-center gap-3">
+            {renderIncognitoButton()}
             <button 
               onClick={() => {
                 setEditingDriver({
@@ -1759,14 +1800,14 @@ ${cardsHTML}
                               {/* Contact */}
                               <div>
                                 <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Contact</span>
-                                <div className="text-[14px] font-bold text-black dark:text-white leading-tight font-mono select-all">
+                                <div className={shieldClass("text-[14px] font-bold text-black dark:text-white leading-tight font-mono select-all")}>
                                   {drv.phone || "—"}
                                 </div>
-                                <div className="text-[12.5px] font-medium text-zinc-600 dark:text-zinc-400 leading-tight truncate mt-0.5 select-all" title={drv.email}>
+                                <div className={shieldClass("text-[12.5px] font-medium text-zinc-600 dark:text-zinc-400 leading-tight truncate mt-0.5 select-all")} title={drv.email}>
                                   {drv.email || "—"}
                                 </div>
                                 {drv.old_phone && drv.old_phone !== drv.phone && (
-                                  <div className="flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300 mt-1 bg-amber-50/50 dark:bg-amber-950/20 p-0.5 px-1.5 rounded w-max border border-amber-100 dark:border-amber-900/50 font-mono">
+                                  <div className={shieldClass("flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300 mt-1 bg-amber-50/50 dark:bg-amber-950/20 p-0.5 px-1.5 rounded w-max border border-amber-100 dark:border-amber-900/50 font-mono")}>
                                     <span className="line-through text-zinc-500">{drv.old_phone}</span>
                                   </div>
                                 )}
@@ -1974,7 +2015,9 @@ ${cardsHTML}
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
-          <div className="w-10"></div>
+          <div className="flex items-center gap-3">
+            {renderIncognitoButton()}
+          </div>
         </header>
 
         <div className="px-4 sm:px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto select-none">
@@ -2143,7 +2186,9 @@ ${cardsHTML}
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
-          <div className="w-10"></div>
+          <div className="flex items-center gap-3">
+            {renderIncognitoButton()}
+          </div>
         </header>
 
         <div className="px-4 sm:px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto select-none">
@@ -2479,14 +2524,19 @@ ${cardsHTML}
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header Breadcrumbs */}
         <header className="px-4 py-3 sm:px-6 sm:py-5 flex flex-col bg-white dark:bg-zinc-950 z-10 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setCurrentDriverDetail(null)} 
-              className="interactive-button p-1 rounded-md hover:bg-zinc-150 dark:hover:bg-zinc-900 text-black dark:text-white flex items-center justify-center"
-            >
-              <ChevronRight size={22} className="rotate-180 stroke-[2.5]" />
-            </button>
-            <span className="font-extrabold text-[19px] text-black dark:text-white tracking-tight">Drivers</span>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentDriverDetail(null)} 
+                className="interactive-button p-1 rounded-md hover:bg-zinc-150 dark:hover:bg-zinc-900 text-black dark:text-white flex items-center justify-center"
+              >
+                <ChevronRight size={22} className="rotate-180 stroke-[2.5]" />
+              </button>
+              <span className="font-extrabold text-[19px] text-black dark:text-white tracking-tight">Drivers</span>
+            </div>
+            <div className="flex items-center gap-3">
+              {renderIncognitoButton()}
+            </div>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 pl-1 mt-1 font-bold">
             <span className="hover:underline cursor-pointer" onClick={() => setCurrentDriverDetail(null)}>Drivers</span>
@@ -2585,16 +2635,16 @@ ${cardsHTML}
                     </div>
                     <div>
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Phone Number</span>
-                      <span className="text-[13.5px] font-mono font-bold text-black dark:text-white select-all">{drv.phone || "—"}</span>
+                      <span className={shieldClass("text-[13.5px] font-mono font-bold text-black dark:text-white select-all")}>{drv.phone || "—"}</span>
                       {drv.old_phone && drv.old_phone !== drv.phone && (
-                        <span className="block text-[10.5px] text-zinc-400 dark:text-zinc-500 line-through mt-0.5">Old: {drv.old_phone}</span>
+                        <span className={shieldClass("block text-[10.5px] text-zinc-400 dark:text-zinc-500 line-through mt-0.5")}>Old: {drv.old_phone}</span>
                       )}
                     </div>
                     <div>
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Email Address</span>
-                      <span className="text-[13.5px] font-bold text-black dark:text-white select-all">{drv.email || "—"}</span>
+                      <span className={shieldClass("text-[13.5px] font-bold text-black dark:text-white select-all")}>{drv.email || "—"}</span>
                       {drv.old_email && drv.old_email !== drv.email && (
-                        <span className="block text-[10.5px] text-zinc-400 dark:text-zinc-500 line-through mt-0.5">Old: {drv.old_email}</span>
+                        <span className={shieldClass("block text-[10.5px] text-zinc-400 dark:text-zinc-500 line-through mt-0.5")}>Old: {drv.old_email}</span>
                       )}
                     </div>
                   </div>
@@ -2602,7 +2652,7 @@ ${cardsHTML}
                   <div className="space-y-3">
                     <div>
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Driver UUID</span>
-                      <span className="text-[12px] font-mono font-bold text-zinc-600 dark:text-zinc-400 select-all">{drv.uuid}</span>
+                      <span className={shieldClass("text-[12px] font-mono font-bold text-zinc-600 dark:text-zinc-400 select-all")}>{drv.uuid}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">First Synced</span>
@@ -2787,6 +2837,66 @@ ${cardsHTML}
                         <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-0.5">Trips Remaining</span>
                         <span className="text-[14px] font-mono font-bold text-black dark:text-white">{drv.reward.trips_remaining}</span>
                       </div>
+                    </div>
+
+                    {/* AI Milestone Projection Card */}
+                    <div className="bg-linear-to-r from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/40 rounded-2xl p-5 space-y-4 shadow-xs relative overflow-hidden">
+                      <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -mr-4 -mt-4 pointer-events-none"></div>
+                      <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-extrabold text-sm uppercase tracking-wider">
+                        <Sparkles size={16} className="text-emerald-500 animate-pulse" />
+                        <span>AI Trip Milestone Projection</span>
+                      </div>
+                      
+                      {(() => {
+                        const currentTrips = drv.tip_count;
+                        const nextMilestone = Math.ceil((currentTrips + 1) / 50) * 50;
+                        const remainingTrips = nextMilestone - currentTrips;
+                        
+                        const startDate = drv.reward?.started_at ? new Date(drv.reward.started_at).getTime() : Date.now();
+                        const daysElapsed = Math.max(0.5, (Date.now() - startDate) / (1000 * 60 * 60 * 24));
+                        const tripsGained = Math.max(0, currentTrips - (drv.reward?.start_tip_count || 0));
+                        const tripsPerDay = tripsGained / daysElapsed;
+                        
+                        const firstSeenDate = drv.first_seen ? new Date(drv.first_seen).getTime() : startDate;
+                        const totalDaysElapsed = Math.max(1, (Date.now() - firstSeenDate) / (1000 * 60 * 60 * 24));
+                        const overallTripsPerDay = currentTrips / totalDaysElapsed;
+                        
+                        const finalTripsPerDay = tripsPerDay > 0 ? tripsPerDay : (overallTripsPerDay > 0 ? overallTripsPerDay : 4.8);
+                        
+                        const remainingDays = remainingTrips / finalTripsPerDay;
+                        const projectedTime = Date.now() + (remainingDays * 24 * 60 * 60 * 1000);
+                        const projectedDate = new Date(projectedTime);
+                        const confidence = Math.min(98, Math.max(65, Math.floor(70 + (daysElapsed * 2.2))));
+                        
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-zinc-650 dark:text-zinc-300">
+                            <div className="bg-white/60 dark:bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-150/40 dark:border-zinc-800/50">
+                              <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Next Milestone</span>
+                              <span className="text-base text-black dark:text-white font-black">{nextMilestone} Trips</span>
+                              <span className="block text-[10px] text-zinc-450 mt-0.5">{remainingTrips} trips remaining</span>
+                            </div>
+                            
+                            <div className="bg-white/60 dark:bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-150/40 dark:border-zinc-800/50">
+                              <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Projected Date</span>
+                              <span className="text-base text-emerald-600 dark:text-emerald-400 font-black">
+                                {projectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                              <span className="block text-[10px] text-zinc-450 mt-0.5">Est. in {Math.ceil(remainingDays)} days</span>
+                            </div>
+                            
+                            <div className="bg-white/60 dark:bg-zinc-900/50 p-3.5 rounded-xl border border-zinc-150/40 dark:border-zinc-800/50">
+                              <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">AI Confidence Index</span>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-base text-teal-600 dark:text-teal-400 font-black">{confidence}%</span>
+                                <div className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                  <div className="h-full bg-teal-500 rounded-full" style={{ width: `${confidence}%` }}></div>
+                                </div>
+                              </div>
+                              <span className="block text-[10px] text-zinc-450 mt-1">Based on {finalTripsPerDay.toFixed(1)} trips/day pace</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Actions */}

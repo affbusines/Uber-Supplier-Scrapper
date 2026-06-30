@@ -60,3 +60,19 @@ export interface NotificationSettings {
   sync_reminder: boolean;
   sync_reminder_hours: number;
 }
+
+export interface DatabaseSnapshot {
+  id: string;
+  timestamp: string;
+  label: string;
+  driversCount: number;
+  drivers: Record<string, Driver>;
+}
+
+export interface SyncSchedule {
+  enabled: boolean;
+  frequency: 'daily' | 'weekly';
+  time: string; // "HH:MM"
+  daysOfWeek?: number[]; // [0-6] (Sunday=0, Monday=1, etc.)
+}
+

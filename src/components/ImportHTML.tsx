@@ -8,7 +8,7 @@ import {
   parseMultipleDriversFromText,
   validateTextParsedDriver,
 } from "../parser";
-import { syncDrivers, getUberCredentials, listenToAuth } from "../firebase";
+import { syncDrivers, getUberCredentials, listenToAuth, listenToDrivers, createDatabaseSnapshot } from "../firebase";
 import {
   Clipboard,
   ShieldAlert,
@@ -27,6 +27,8 @@ import {
   Flame,
   ShieldCheck,
   AlertOctagon,
+  SlidersHorizontal,
+  Check,
 } from "lucide-react";
 import Avatar from "./Avatar";
 
@@ -61,6 +63,9 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [maxPages, setMaxPages] = useState<number>(0);
   const [startPage, setStartPage] = useState<number>(1);
+
+  const [currentDrivers, setCurrentDrivers] = useState<any[]>([]);
+  const [pendingSyncDrivers, setPendingSyncDrivers] = useState<any[] | null>(null);
 
   // Tracks which sync (by started_at) we have already processed on the client.
   // Using localStorage so the flag persists when the user navigates away and
@@ -103,6 +108,13 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
       setHasCreds(!!(creds.email && creds.org_id && creds.encrypted_password));
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsubDrivers = listenToDrivers((list) => {
+      setCurrentDrivers(list);
+    });
+    return () => unsubDrivers();
   }, []);
 
   useEffect(() => {
@@ -165,26 +177,206 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
   }, [currentUser]);
 
   const handleCompleteAutoSync = async (drivers: any[]) => {
-    try {
-      setIsSyncing(true);
-      const report = await syncDrivers(drivers);
-      setStatusMessage({
-        type: "success",
-        text: `স্বয়ংক্রিয় সিঙ্ক সফলভাবে সম্পন্ন! নতুন ড্রাইভার যোগ: ${report.added}, এবং আপডেট: ${report.updated} জন!`,
-      });
-      setIsSyncing(false);
-      setTimeout(() => {
-        onSuccess();
-      }, 2000);
-    } catch (err) {
-      setStatusMessage({
-        type: "error",
-        text:
-          "স্বয়ংক্রিয় ডেটা সিঙ্ক করার সময় ত্রুটি ঘটেছে: " +
-          (err instanceof Error ? err.message : String(err)),
-      });
-      setIsSyncing(false);
-    }
+    setIsSyncing(false);
+    setPendingSyncDrivers(drivers);
+  };
+
+  const renderSyncDiffEngine = () => {
+    if (!pendingSyncDrivers) return null;
+
+    const dbDriversMap: Record<string, any> = {};
+    currentDrivers.forEach((d) => {
+      dbDriversMap[d.uuid] = d;
+    });
+
+    const added: any[] = [];
+    const modified: any[] = [];
+    const unchanged: any[] = [];
+
+    pendingSyncDrivers.forEach((drv) => {
+      const existing = dbDriversMap[drv.uuid];
+      if (!existing) {
+        added.push(drv);
+      } else {
+        const isChanged =
+          drv.tip_count !== existing.tip_count ||
+          drv.phone !== existing.phone ||
+          drv.email !== existing.email;
+        if (isChanged) {
+          modified.push({ new: drv, old: existing });
+        } else {
+          unchanged.push(drv);
+        }
+      }
+    });
+
+    const scrapedUuids = new Set(pendingSyncDrivers.map((d) => d.uuid));
+    const missing = currentDrivers.filter((d) => !scrapedUuids.has(d.uuid));
+
+    const handleCommitSync = async () => {
+      try {
+        setIsSyncing(true);
+        // Save snapshot first
+        await createDatabaseSnapshot("Auto-Backup before Sync Commit");
+        
+        // Save synced drivers
+        const report = await syncDrivers(pendingSyncDrivers);
+        setStatusMessage({
+          type: "success",
+          text: `সিঙ্ক সফলভাবে সম্পন্ন! নতুন যোগ: ${report.added}, আপডেট: ${report.updated} জন!`,
+        });
+        setPendingSyncDrivers(null);
+        setIsSyncing(false);
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
+      } catch (err) {
+        setStatusMessage({
+          type: "error",
+          text: "সিঙ্ক করার সময় ত্রুটি ঘটেছে: " + (err instanceof Error ? err.message : String(err)),
+        });
+        setIsSyncing(false);
+      }
+    };
+
+    return (
+      <div className="space-y-6 animate-enter select-none">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-black dark:text-white tracking-tight flex items-center gap-2">
+                <SlidersHorizontal size={20} className="text-[#06C167]" />
+                <span>Visual Sync Diff Engine</span>
+              </h2>
+              <p className="text-xs text-zinc-500 mt-1">Review scraped data modifications before writing to Firebase database.</p>
+            </div>
+            
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setPendingSyncDrivers(null)}
+                className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-black dark:text-white text-xs font-bold rounded-lg cursor-pointer transition select-none"
+              >
+                Discard Sync
+              </button>
+              <button
+                onClick={handleCommitSync}
+                disabled={isSyncing}
+                className="px-4 py-2 bg-[#06C167] hover:bg-[#05a858] text-white text-xs font-bold rounded-lg cursor-pointer transition select-none flex items-center gap-1.5 shadow-sm"
+              >
+                {isSyncing ? (
+                  <RefreshCw size={13} className="animate-spin" />
+                ) : (
+                  <Check size={13} className="stroke-[2.5]" />
+                )}
+                <span>Commit Sync</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Sync Stats Summary badges */}
+          <div className="flex flex-wrap gap-2.5 text-xs font-bold">
+            <span className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-750 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40 p-1 px-3 rounded-lg">
+              {added.length} Added
+            </span>
+            <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-750 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 p-1 px-3 rounded-lg">
+              {modified.length} Modified
+            </span>
+            <span className="bg-red-50 dark:bg-red-950/20 text-red-750 dark:text-red-300 border border-red-200 dark:border-red-900/40 p-1 px-3 rounded-lg">
+              {missing.length} Missing
+            </span>
+            <span className="bg-zinc-50 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400 border border-zinc-150 dark:border-zinc-800 p-1 px-3 rounded-lg">
+              {unchanged.length} Unchanged
+            </span>
+          </div>
+
+          {/* Side-by-side diff list */}
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 no-scrollbar pt-2">
+            {added.length === 0 && modified.length === 0 && missing.length === 0 && (
+              <div className="text-center py-10 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-zinc-150 dark:border-zinc-800 border-dashed">
+                <CheckCircle size={32} className="text-[#06C167]" />
+                <p className="text-xs font-bold text-zinc-650">No Changes Detected</p>
+                <p className="text-[11px] text-zinc-450 mt-0.5">Scraped data exactly matches current database drivers.</p>
+              </div>
+            )}
+
+            {/* Added Drivers */}
+            {added.map((drv) => (
+              <div key={drv.uuid} className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-950/20">
+                <div className="bg-red-50/10 dark:bg-red-950/5 border border-dashed border-red-250 dark:border-red-900/30 rounded-xl p-4 flex items-center justify-center text-xs font-bold text-red-500/80">
+                  <span>Empty / New Entry</span>
+                </div>
+                <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-150 dark:border-emerald-900/40 rounded-xl p-4 flex gap-3 min-w-0">
+                  <span className="bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md h-max mt-0.5">ADDED</span>
+                  <div className="min-w-0 space-y-1.5">
+                    <span className="font-extrabold text-sm text-black dark:text-white uppercase block leading-tight">{drv.name}</span>
+                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 block truncate">{drv.uuid}</span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 pt-1 font-mono">
+                      <span>📞 {drv.phone || "—"}</span>
+                      <span>🚗 {drv.tip_count} trips</span>
+                      <span className="col-span-2 truncate">✉️ {drv.email || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Modified Drivers */}
+            {modified.map((item) => (
+              <div key={item.new.uuid} className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-950/20">
+                {/* Left Side: Old Database Value */}
+                <div className="bg-red-50 dark:bg-red-950/15 border border-red-150 dark:border-red-900/40 rounded-xl p-4 flex gap-3 min-w-0">
+                  <span className="bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md h-max mt-0.5">BEFORE</span>
+                  <div className="min-w-0 space-y-1.5">
+                    <span className="font-extrabold text-sm text-zinc-700 dark:text-zinc-300 uppercase block leading-tight">{item.old.name}</span>
+                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 block truncate">{item.old.uuid}</span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 font-mono">
+                      <span className={item.old.phone !== item.new.phone ? "text-red-750 dark:text-red-400 font-bold" : ""}>📞 {item.old.phone || "—"}</span>
+                      <span className={item.old.tip_count !== item.new.tip_count ? "text-red-750 dark:text-red-400 font-bold" : ""}>🚗 {item.old.tip_count} trips</span>
+                      <span className={`col-span-2 truncate ${item.old.email !== item.new.email ? "text-red-750 dark:text-red-400 font-bold" : ""}`}>✉️ {item.old.email || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: New Synced Value */}
+                <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-150 dark:border-emerald-900/40 rounded-xl p-4 flex gap-3 min-w-0">
+                  <span className="bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md h-max mt-0.5">AFTER</span>
+                  <div className="min-w-0 space-y-1.5">
+                    <span className="font-extrabold text-sm text-black dark:text-white uppercase block leading-tight">{item.new.name}</span>
+                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 block truncate">{item.new.uuid}</span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-zinc-700 dark:text-zinc-300 pt-1 font-mono">
+                      <span className={item.old.phone !== item.new.phone ? "text-emerald-700 dark:text-emerald-400 font-black" : ""}>📞 {item.new.phone || "—"}</span>
+                      <span className={item.old.tip_count !== item.new.tip_count ? "text-emerald-700 dark:text-emerald-400 font-black" : ""}>🚗 {item.new.tip_count} trips</span>
+                      <span className={`col-span-2 truncate ${item.old.email !== item.new.email ? "text-emerald-700 dark:text-emerald-400 font-black" : ""}`}>✉️ {item.new.email || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Missing Drivers */}
+            {missing.map((drv) => (
+              <div key={drv.uuid} className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-950/20">
+                <div className="bg-red-50 dark:bg-red-950/15 border border-red-150 dark:border-red-900/40 rounded-xl p-4 flex gap-3 min-w-0">
+                  <span className="bg-red-650 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md h-max mt-0.5">MISSING</span>
+                  <div className="min-w-0 space-y-1.5">
+                    <span className="font-extrabold text-sm text-zinc-700 dark:text-zinc-300 uppercase block leading-tight">{drv.name}</span>
+                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 block truncate">{drv.uuid}</span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 font-mono">
+                      <span>📞 {drv.phone || "—"}</span>
+                      <span>🚗 {drv.tip_count} trips</span>
+                      <span className="col-span-2 truncate">✉️ {drv.email || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-red-50/10 dark:bg-red-950/5 border border-dashed border-red-255 dark:border-red-900/30 rounded-xl p-4 flex items-center justify-center text-xs font-bold text-red-500/85">
+                  <span>Driver not present in Uber scrape</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const handleStartAutoSync = async () => {
@@ -471,6 +663,10 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
       setIsSyncing(false);
     }
   };
+
+  if (pendingSyncDrivers) {
+    return renderSyncDiffEngine();
+  }
 
   return (
     <div id="import-view-container" className="space-y-6">

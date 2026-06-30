@@ -7,6 +7,10 @@ import {
   listenToAuth,
   getUberCredentials,
   saveUberCredentials,
+  getDatabaseSnapshots,
+  createDatabaseSnapshot,
+  rollbackDatabaseToSnapshot,
+  deleteDatabaseSnapshot,
 } from "../firebase";
 import { GlobalSettings, NotificationSettings } from "../types";
 import {
@@ -23,6 +27,11 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Calendar,
+  Clock,
+  Trash2,
+  Database,
+  Plus,
 } from "lucide-react";
 
 interface SettingsPanelProps {
@@ -49,6 +58,86 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
 
   // App Theme local state for visual indicators
   const [theme, setTheme] = useState<string>("light");
+
+  // ── ADVANCED SHEDULE & SNAPSHOT BACKUP STATES ──
+  const [scheduleEnabled, setScheduleEnabled] = useState<boolean>(false);
+  const [scheduleFrequency, setScheduleFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [scheduleTime, setScheduleTime] = useState<string>("03:00");
+  const [scheduleDays, setScheduleDays] = useState<number[]>([1]); // Monday by default
+  const [isSavingSchedule, setIsSavingSchedule] = useState<boolean>(false);
+
+  const [snapshots, setSnapshots] = useState<any[]>([]);
+  const [isCreatingSnapshot, setIsCreatingSnapshot] = useState<boolean>(false);
+
+  const handleSaveSchedule = async () => {
+    setIsSavingSchedule(true);
+    try {
+      const res = await fetch("/api/sync/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enabled: scheduleEnabled,
+          frequency: scheduleFrequency,
+          time: scheduleTime,
+          daysOfWeek: scheduleDays
+        })
+      });
+      if (res.ok) {
+        onShowToast("success", "📅 Sync schedule updated successfully!");
+      } else {
+        onShowToast("error", "Failed to update sync schedule.");
+      }
+    } catch (err) {
+      onShowToast("error", "Connection error saving schedule.");
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
+
+  const handleCreateSnapshot = async () => {
+    setIsCreatingSnapshot(true);
+    try {
+      const label = `Manual Backup (${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()})`;
+      await createDatabaseSnapshot(label);
+      onShowToast("success", "🕒 Database snapshot taken successfully!");
+      const snaps = await getDatabaseSnapshots();
+      setSnapshots(snaps);
+    } catch (err) {
+      onShowToast("error", "Failed to create snapshot.");
+    } finally {
+      setIsCreatingSnapshot(false);
+    }
+  };
+
+  const handleRollback = async (id: string) => {
+    try {
+      if (window.confirm("Are you sure you want to rollback the database to this snapshot? Current data will be replaced!")) {
+        await rollbackDatabaseToSnapshot(id);
+        onShowToast("success", "🔄 Database successfully rolled back to snapshot!");
+      }
+    } catch (err) {
+      onShowToast("error", "Rollback failed.");
+    }
+  };
+
+  const handleDeleteSnapshot = async (id: string) => {
+    try {
+      await deleteDatabaseSnapshot(id);
+      onShowToast("success", "🗑️ Snapshot deleted successfully.");
+      const snaps = await getDatabaseSnapshots();
+      setSnapshots(snaps);
+    } catch (err) {
+      onShowToast("error", "Failed to delete snapshot.");
+    }
+  };
+
+  const toggleScheduleDay = (day: number) => {
+    setScheduleDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day) 
+        : [...prev, day].sort()
+    );
+  };
 
   useEffect(() => {
     // Listen to user auth to fetch user-specific preference
@@ -82,9 +171,34 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
     syncThemeInSettings();
     window.addEventListener("theme_changed", syncThemeInSettings);
 
+    const loadScheduleAndSnapshots = async () => {
+      try {
+        const res = await fetch("/api/sync/schedule");
+        if (res.ok) {
+          const data = await res.json();
+          setScheduleEnabled(data.enabled);
+          setScheduleFrequency(data.frequency || 'daily');
+          setScheduleTime(data.time || '03:00');
+          setScheduleDays(data.daysOfWeek || [1]);
+        }
+        const snaps = await getDatabaseSnapshots();
+        setSnapshots(snaps);
+      } catch (err) {
+        console.error("Error loading schedule/snapshots:", err);
+      }
+    };
+    loadScheduleAndSnapshots();
+
+    const handleSnapshotsUpdate = async () => {
+      const snaps = await getDatabaseSnapshots();
+      setSnapshots(snaps);
+    };
+    window.addEventListener('driver_snapshots_updated', handleSnapshotsUpdate);
+
     return () => {
       unsubAuth();
       window.removeEventListener("theme_changed", syncThemeInSettings);
+      window.removeEventListener('driver_snapshots_updated', handleSnapshotsUpdate);
     };
   }, []);
 
@@ -571,6 +685,201 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                 {isSavingCreds ? "সংরক্ষণ হচ্ছে..." : "💾 Save Credentials"}
               </span>
             </button>
+          </div>
+        </div>
+
+        {/* 4. BACKGROUND SYNC SCHEDULER BLOCK */}
+        <div className="md:col-span-2 bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+          <div className="p-5 space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3">
+              <div className="bg-[var(--brand-primary)] text-black p-1.5 rounded">
+                <Calendar size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm tracking-tight">
+                  📅 Automatic Sync Scheduler
+                </h3>
+                <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                  VISUAL CRON SYNC SCHEDULER
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-650 dark:text-[var(--text-muted)] leading-relaxed">
+              স্বয়ংক্রিয়ভাবে ব্যাকগ্রাউন্ডে ডেটা রিফ্রেশ করার জন্য একটি নির্দিষ্ট সময় সেট করুন। scheduler সচল থাকলে ব্রাউজার সেশন অফ থাকলেও আপনার লোকাল সার্ভার থেকে Uber স্ক্যাপারটি স্বয়ংক্রিয় রান হয়ে ডেটাবেজ আপডেট করে নিবে।
+            </p>
+
+            <div className="space-y-4 pt-2">
+              {/* Enable Schedule Switch */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold">Enable Auto Sync Schedule</span>
+                <button
+                  onClick={() => setScheduleEnabled(!scheduleEnabled)}
+                  className={`px-3 py-1 rounded text-[10px] font-black tracking-wide transition cursor-pointer ${
+                    scheduleEnabled
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-[var(--bg-surface)] text-[var(--text-muted)] border border-transparent"
+                  }`}
+                >
+                  {scheduleEnabled ? "✅ ENABLED" : "DISABLED"}
+                </button>
+              </div>
+
+              {scheduleEnabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[var(--bg-base)]/50 p-4 rounded border border-[var(--border-base)]/50 text-xs">
+                  {/* Frequency & Time */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block font-bold mb-1.5">Frequency:</label>
+                      <div className="flex items-center gap-3">
+                        <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="freq" 
+                            checked={scheduleFrequency === 'daily'} 
+                            onChange={() => setScheduleFrequency('daily')}
+                            className="accent-black" 
+                          />
+                          <span>Daily</span>
+                        </label>
+                        <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="freq" 
+                            checked={scheduleFrequency === 'weekly'} 
+                            onChange={() => setScheduleFrequency('weekly')}
+                            className="accent-black" 
+                          />
+                          <span>Weekly</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold mb-1.5 flex items-center gap-1">
+                        <Clock size={13} />
+                        <span>Execution Time (HH:MM):</span>
+                      </label>
+                      <input 
+                        type="time" 
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                        className="px-2.5 py-1.5 font-bold font-mono border border-[var(--border-base)] rounded bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-black outline-none w-max"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Weekly Days Checkboxes */}
+                  {scheduleFrequency === 'weekly' && (
+                    <div>
+                      <label className="block font-bold mb-2">Days of Week:</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, idx) => {
+                          const active = scheduleDays.includes(idx);
+                          return (
+                            <button
+                              key={day}
+                              onClick={() => toggleScheduleDay(idx)}
+                              className={`py-1 text-center font-bold text-[11px] rounded border transition-all cursor-pointer ${
+                                active 
+                                  ? "bg-black text-white dark:bg-white dark:text-black border-black" 
+                                  : "bg-zinc-50 hover:bg-zinc-100 border-[var(--border-base)] text-zinc-650"
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4 bg-[var(--bg-base)]/40 border-t border-zinc-100 flex justify-end">
+            <button
+              onClick={handleSaveSchedule}
+              disabled={isSavingSchedule}
+              className="px-4 py-2 bg-black hover:bg-white/10 text-[var(--bg-base)] dark:bg-[var(--bg-base)] dark:hover:bg-[var(--bg-subtle)] dark:text-[var(--text-strong)] rounded text-xs font-bold font-sans transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Save size={14} />
+              <span>{isSavingSchedule ? "সংরক্ষণ হচ্ছে..." : "💾 Save Sync Schedule"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 5. DATABASE SNAPHOTS & TIME TRAVEL BLOCK */}
+        <div className="md:col-span-2 bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+          <div className="p-5 space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-zinc-100 pb-3">
+              <div className="bg-[var(--brand-primary)] text-black p-1.5 rounded">
+                <Database size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm tracking-tight">
+                  🕒 Database Backup & Time Travel
+                </h3>
+                <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                  RESTORE SNAPSHOTS & TIME TRAVEL HUB
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-xs text-zinc-650 dark:text-[var(--text-muted)] leading-relaxed">
+                ডেটাবেজের বর্তমান ড্রাইভার তালিকার স্ন্যাপশট নিয়ে রাখুন। ভুল ডেটা সিঙ্ক বা ফাইল ওভাররাইট হয়ে গেলে যেকোনো সময় পুরোনো স্ন্যাপশটে টাইম ট্রাভেল করে ডাটাবেজ পুনরুদ্ধার (Rollback) করতে পারবেন।
+              </p>
+              <button
+                onClick={handleCreateSnapshot}
+                disabled={isCreatingSnapshot}
+                className="px-3.5 py-2 bg-[#06C167] hover:bg-[#05a858] text-white text-xs font-bold rounded-lg cursor-pointer transition select-none flex items-center gap-1.5 shadow-sm shrink-0"
+              >
+                {isCreatingSnapshot ? (
+                  <RefreshCw size={13} className="animate-spin" />
+                ) : (
+                  <Plus size={13} className="stroke-[2.5]" />
+                )}
+                <span>Backup Now</span>
+              </button>
+            </div>
+
+            {/* Backups List */}
+            <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar pt-2">
+              {snapshots.length === 0 ? (
+                <div className="text-center py-6 text-zinc-400 dark:text-zinc-600 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-xs">
+                  কোনো স্ন্যাপশট ব্যাকআপ পাওয়া যায়নি।
+                </div>
+              ) : (
+                snapshots.map((snap) => (
+                  <div key={snap.id} className="flex items-center justify-between gap-4 p-3 bg-zinc-50/50 dark:bg-zinc-950/20 border border-[var(--border-base)]/50 rounded-xl text-xs">
+                    <div className="min-w-0">
+                      <span className="font-bold text-black dark:text-white block truncate">{snap.label}</span>
+                      <span className="text-[10px] text-zinc-400 block mt-0.5">
+                        {new Date(snap.timestamp).toLocaleString()} • {snap.driversCount} Drivers
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleRollback(snap.id)}
+                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-250 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40 text-[10.5px] font-black rounded-lg cursor-pointer transition"
+                      >
+                        Rollback
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSnapshot(snap.id)}
+                        className="p-1 text-zinc-450 hover:text-red-500 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900 cursor-pointer transition"
+                        title="Delete Backup"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 

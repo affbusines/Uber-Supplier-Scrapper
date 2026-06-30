@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs, getDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Driver } from './types';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -815,3 +815,112 @@ export async function dismissRewardMilestone(uuid: string, milestone: 'f10' | 'f
   }
   window.dispatchEvent(new Event('driver_db_updated'));
 }
+
+// ── DATABASE BACKUPS & TIME TRAVEL TIME TRAVEL METHODS ──
+const SNAPSHOTS_STORAGE_KEY = 'uber_driver_data_snapshots';
+
+export async function createDatabaseSnapshot(label: string): Promise<void> {
+  const uid = getCurrentUid();
+  const existingDrivers = getLocalDrivers();
+  const snapshotId = `snap_${Date.now()}`;
+  
+  const snapshot = {
+    id: snapshotId,
+    timestamp: new Date().toISOString(),
+    label: label || "Manual Backup",
+    driversCount: Object.keys(existingDrivers).length,
+    drivers: existingDrivers
+  };
+  
+  // Local storage
+  const localSnapsStr = localStorage.getItem(`${SNAPSHOTS_STORAGE_KEY}_${uid}`);
+  const localSnaps: Record<string, any> = localSnapsStr ? JSON.parse(localSnapsStr) : {};
+  localSnaps[snapshotId] = snapshot;
+  localStorage.setItem(`${SNAPSHOTS_STORAGE_KEY}_${uid}`, JSON.stringify(localSnaps));
+  
+  // Firestore
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const snapDocRef = doc(db, 'users', uid, 'snapshots', snapshotId);
+      await setDoc(snapDocRef, snapshot);
+    } catch (err) {
+      console.error("Error saving snapshot to Firestore:", err);
+    }
+  }
+  window.dispatchEvent(new Event('driver_snapshots_updated'));
+}
+
+export async function getDatabaseSnapshots(): Promise<any[]> {
+  const uid = getCurrentUid();
+  const localSnapsStr = localStorage.getItem(`${SNAPSHOTS_STORAGE_KEY}_${uid}`);
+  const localSnaps: Record<string, any> = localSnapsStr ? JSON.parse(localSnapsStr) : {};
+  
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const snapsCol = collection(db, 'users', uid, 'snapshots');
+      const querySnapshot = await getDocs(snapsCol);
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        localSnaps[data.id] = data;
+      });
+      localStorage.setItem(`${SNAPSHOTS_STORAGE_KEY}_${uid}`, JSON.stringify(localSnaps));
+    } catch (err) {
+      console.error("Error fetching Firestore snapshots:", err);
+    }
+  }
+  return Object.values(localSnaps).sort((a: any, b: any) => b.timestamp.localeCompare(a.timestamp));
+}
+
+export async function rollbackDatabaseToSnapshot(snapshotId: string): Promise<void> {
+  const uid = getCurrentUid();
+  const localSnapsStr = localStorage.getItem(`${SNAPSHOTS_STORAGE_KEY}_${uid}`);
+  if (!localSnapsStr) throw new Error("No backups found.");
+  const localSnaps: Record<string, any> = JSON.parse(localSnapsStr);
+  const snap = localSnaps[snapshotId];
+  if (!snap) throw new Error("Backup snapshot not found.");
+  
+  saveLocalDrivers(snap.drivers);
+  
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const driversCol = collection(db, 'users', uid, 'drivers');
+      const querySnapshot = await getDocs(driversCol);
+      const batchDelete = writeBatch(db);
+      querySnapshot.forEach(docSnap => {
+        batchDelete.delete(docSnap.ref);
+      });
+      await batchDelete.commit();
+      
+      const batchWrite = writeBatch(db);
+      Object.entries(snap.drivers).forEach(([uuid, drv]) => {
+        const docRef = doc(db, 'users', uid, 'drivers', uuid);
+        batchWrite.set(docRef, drv);
+      });
+      await batchWrite.commit();
+    } catch (err) {
+      console.error("Error rolling back Firestore database:", err);
+      throw err;
+    }
+  }
+  window.dispatchEvent(new Event('driver_db_updated'));
+}
+
+export async function deleteDatabaseSnapshot(snapshotId: string): Promise<void> {
+  const uid = getCurrentUid();
+  const localSnapsStr = localStorage.getItem(`${SNAPSHOTS_STORAGE_KEY}_${uid}`);
+  if (!localSnapsStr) return;
+  const localSnaps: Record<string, any> = JSON.parse(localSnapsStr);
+  delete localSnaps[snapshotId];
+  localStorage.setItem(`${SNAPSHOTS_STORAGE_KEY}_${uid}`, JSON.stringify(localSnaps));
+  
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const snapDocRef = doc(db, 'users', uid, 'snapshots', snapshotId);
+      await deleteDoc(snapDocRef);
+    } catch (err) {
+      console.error("Error deleting snapshot from Firestore:", err);
+    }
+  }
+  window.dispatchEvent(new Event('driver_snapshots_updated'));
+}
+
