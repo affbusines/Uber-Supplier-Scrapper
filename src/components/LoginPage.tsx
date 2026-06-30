@@ -1,12 +1,19 @@
 import React, { useState } from "react";
-import { logInWithGoogle } from "../firebase";
-import { ShieldAlert } from "lucide-react";
+import { logInWithGoogle, loginWithEmailPassword } from "../firebase";
+import { ShieldAlert, ArrowLeft, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { GoogleIcon } from "@/components/google-icon";
+
+type Step = "email" | "password";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const [step, setStep] = useState<Step>("email");
   const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -14,22 +21,69 @@ export default function LoginPage() {
     try {
       await logInWithGoogle();
     } catch (err: any) {
-      setError(err.message || "Failed to sign in. Please try again.");
+      setError(err.message || "Google sign-in failed. Please try again.");
       setLoading(false);
     }
   };
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailStep = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput.trim()) {
-      setError("Please enter a valid phone number or email.");
+    const trimmed = emailInput.trim();
+    if (!trimmed) {
+      setError("Please enter a valid email address.");
       return;
     }
-    setError("Passwordless email access is temporarily offline for verification. Please sign in with Google.");
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setError("Please enter a valid email address (e.g. you@example.com).");
+      return;
+    }
+    setError(null);
+    setStep("password");
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordInput.trim()) {
+      setError("Please enter a password.");
+      return;
+    }
+    if (passwordInput.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await loginWithEmailPassword(emailInput.trim(), passwordInput);
+      if (result.isNewUser) {
+        setSuccess("New account created! Welcome aboard 🎉");
+      }
+      // Auth state listener in App.tsx will handle the redirect
+    } catch (err: any) {
+      setLoading(false);
+      // Friendly error messages
+      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+        setError("Incorrect password. Please try again.");
+      } else if (err.code === "auth/email-already-in-use") {
+        setError("This email is already registered. Try a different password.");
+      } else if (err.code === "auth/weak-password") {
+        setError("Password too weak. Use at least 6 characters.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Too many attempts. Please wait a moment and try again.");
+      } else if (err.code === "auth/network-request-failed") {
+        setError("Network error. Check your internet connection.");
+      } else {
+        setError(err.message || "Sign-in failed. Please try again.");
+      }
+    }
   };
 
   const handleAppleClick = () => {
-    setError("Apple authentication is not configured for this project. Please sign in with Google.");
+    setError("Apple authentication is not configured. Please sign in with Google or Email.");
   };
 
   return (
@@ -46,38 +100,118 @@ export default function LoginPage() {
       {/* 2. Main Content Wrapper */}
       <main className="flex-1 flex justify-center pt-12 pb-8 sm:pt-20 px-6">
         <div className="w-full max-w-[450px] flex flex-col gap-6">
-          
+
+          {/* Back button for password step */}
+          {step === "password" && (
+            <button
+              onClick={() => {
+                setStep("email");
+                setPasswordInput("");
+                setError(null);
+                setSuccess(null);
+              }}
+              className="flex items-center gap-2 text-sm text-zinc-500 hover:text-black dark:hover:text-white transition -mb-2 self-start"
+            >
+              <ArrowLeft size={15} />
+              <span>Back</span>
+            </button>
+          )}
+
           {/* Header Title */}
           <h2 className="text-3xl font-bold text-black dark:text-white leading-tight tracking-tight">
-            What's your phone number or email?
+            {step === "email"
+              ? "What's your email?"
+              : "Enter your password"}
           </h2>
+
+          {step === "password" && (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 -mt-4">
+              Signing in as <span className="font-semibold text-black dark:text-white">{emailInput}</span>
+            </p>
+          )}
+
+          {/* Success Banner */}
+          {success && (
+            <div className="w-full bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 p-3 rounded-lg text-xs font-semibold flex items-center gap-2">
+              <CheckCircle size={14} className="shrink-0" />
+              <span>{success}</span>
+            </div>
+          )}
 
           {/* Error Banner */}
           {error && (
-            <div className="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 p-3 rounded-lg text-xs font-semibold animate-shake flex items-center gap-2">
+            <div className="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 p-3 rounded-lg text-xs font-semibold flex items-center gap-2">
               <ShieldAlert size={14} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-4">
-            <input
-              type="text"
-              placeholder="Enter phone number or email"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              className="w-full px-4 py-3 bg-[#f6f6f6] dark:bg-zinc-900 text-black dark:text-white placeholder-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:border-black dark:focus:border-white focus:ring-1 focus:ring-black dark:focus:ring-white text-base outline-none transition font-medium"
-            />
+          {/* Step 1: Email Form */}
+          {step === "email" && (
+            <form onSubmit={handleEmailStep} className="flex flex-col gap-4">
+              <input
+                type="email"
+                placeholder="Enter your email address"
+                value={emailInput}
+                onChange={(e) => { setEmailInput(e.target.value); setError(null); }}
+                autoFocus
+                autoComplete="email"
+                className="w-full px-4 py-3 bg-[#f6f6f6] dark:bg-zinc-900 text-black dark:text-white placeholder-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:border-black dark:focus:border-white focus:ring-1 focus:ring-black dark:focus:ring-white text-base outline-none transition font-medium"
+              />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-black hover:bg-zinc-900 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-bold text-sm rounded-lg transition-all cursor-pointer shadow-sm disabled:opacity-50"
-            >
-              Continue
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-black hover:bg-zinc-900 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-bold text-sm rounded-lg transition-all cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                Continue
+              </button>
+            </form>
+          )}
+
+          {/* Step 2: Password Form */}
+          {step === "password" && (
+            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter password (min. 6 characters)"
+                  value={passwordInput}
+                  onChange={(e) => { setPasswordInput(e.target.value); setError(null); }}
+                  autoFocus
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-12 bg-[#f6f6f6] dark:bg-zinc-900 text-black dark:text-white placeholder-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:border-black dark:focus:border-white focus:ring-1 focus:ring-black dark:focus:ring-white text-base outline-none transition font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 -mt-1">
+                If this email has no account, a new one will be created automatically.
+              </p>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-black hover:bg-zinc-900 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-bold text-sm rounded-lg transition-all cursor-pointer shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/40 dark:border-black/40 border-t-white dark:border-t-black rounded-full animate-spin" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  "Sign In / Create Account"
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Divider */}
           <div className="relative flex items-center justify-center my-1 select-none">
@@ -117,7 +251,7 @@ export default function LoginPage() {
 
           {/* Consent / Policy Footer */}
           <p className="text-center sm:text-left text-zinc-500 dark:text-zinc-400 text-[12px] leading-relaxed select-none">
-            You consent to receive a verification code by text or WhatsApp. Message and data rates may apply.
+            By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>
 
         </div>

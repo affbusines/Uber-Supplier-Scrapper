@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs, getDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Driver } from './types';
 import firebaseConfig from '../firebase-applet-config.json';
@@ -301,6 +301,48 @@ export async function logInWithGoogle() {
     return result.user;
   } catch (err) {
     console.error('Sign-in failed: ', err);
+    throw err;
+  }
+}
+
+/**
+ * Email + Password Sign-In. Auto-creates account if no user found.
+ */
+export async function loginWithEmailPassword(email: string, password: string) {
+  if (isSimulated || !auth) {
+    // Mock successful login
+    const mockUser = {
+      uid: 'mock-user-email-' + btoa(email),
+      displayName: email.split('@')[0],
+      email: email,
+      photoURL: null,
+      emailVerified: false
+    };
+    localStorage.setItem('uber_mock_auth', JSON.stringify(mockUser));
+    window.dispatchEvent(new Event('auth_state_changed'));
+    return { user: mockUser, isNewUser: false };
+  }
+
+  try {
+    // Try to sign in first
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return { user: result.user, isNewUser: false };
+  } catch (err: any) {
+    if (
+      err.code === 'auth/user-not-found' ||
+      err.code === 'auth/invalid-credential' ||
+      err.code === 'auth/invalid-email'
+    ) {
+      // Auto-create a new account
+      try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        return { user: result.user, isNewUser: true };
+      } catch (createErr: any) {
+        console.error('Account creation failed:', createErr);
+        throw createErr;
+      }
+    }
+    console.error('Email login failed:', err);
     throw err;
   }
 }
