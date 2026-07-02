@@ -968,3 +968,121 @@ export async function deleteDatabaseSnapshot(snapshotId: string): Promise<void> 
   window.dispatchEvent(new Event('driver_snapshots_updated'));
 }
 
+// ── DAILY LOGS & SCRAPED PAYOUTS FOR MULTI-PARTNER LEDGER ──
+
+export interface DailyLog {
+  id: string;
+  date: string;
+  partnerId: string;
+  vehiclePlate: string;
+  submittedAt: string;
+}
+
+export interface ScrapedPayout {
+  transactionId: string;
+  settlementDate: string;
+  vehiclePlate: string;
+  amount: number;
+  status: string;
+  attributedTo: string | null;
+  matchedLogIds: string[];
+  description?: string;
+}
+
+export async function saveDailyLog(log: DailyLog): Promise<void> {
+  const uid = getCurrentUid();
+  const localLogsStr = localStorage.getItem(`daily_logs_${uid}`);
+  const localLogs: Record<string, DailyLog> = localLogsStr ? JSON.parse(localLogsStr) : {};
+  localLogs[log.id] = log;
+  localStorage.setItem(`daily_logs_${uid}`, JSON.stringify(localLogs));
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      await setDoc(doc(db, 'users', uid, 'daily_logs', log.id), log);
+    } catch (err) {
+      console.error("Error saving daily log to Firestore:", err);
+    }
+  }
+  window.dispatchEvent(new Event('daily_logs_updated'));
+}
+
+export async function getDailyLogs(): Promise<DailyLog[]> {
+  const uid = getCurrentUid();
+  const localLogsStr = localStorage.getItem(`daily_logs_${uid}`);
+  const localLogs: Record<string, DailyLog> = localLogsStr ? JSON.parse(localLogsStr) : {};
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const logsCol = collection(db, 'users', uid, 'daily_logs');
+      const querySnapshot = await getDocs(logsCol);
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data() as DailyLog;
+        localLogs[data.id] = data;
+      });
+      localStorage.setItem(`daily_logs_${uid}`, JSON.stringify(localLogs));
+    } catch (err) {
+      console.error("Error fetching Firestore daily logs:", err);
+    }
+  }
+  return Object.values(localLogs).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+}
+
+export async function deleteDailyLog(logId: string): Promise<void> {
+  const uid = getCurrentUid();
+  const localLogsStr = localStorage.getItem(`daily_logs_${uid}`);
+  if (!localLogsStr) return;
+  const localLogs: Record<string, DailyLog> = JSON.parse(localLogsStr);
+  delete localLogs[logId];
+  localStorage.setItem(`daily_logs_${uid}`, JSON.stringify(localLogs));
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      await deleteDoc(doc(db, 'users', uid, 'daily_logs', logId));
+    } catch (err) {
+      console.error("Error deleting daily log from Firestore:", err);
+    }
+  }
+  window.dispatchEvent(new Event('daily_logs_updated'));
+}
+
+export async function getScrapedPayouts(): Promise<ScrapedPayout[]> {
+  const uid = getCurrentUid();
+  const localPayoutsStr = localStorage.getItem(`scraped_payouts_${uid}`);
+  const localPayouts: Record<string, ScrapedPayout> = localPayoutsStr ? JSON.parse(localPayoutsStr) : {};
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const payoutsCol = collection(db, 'users', uid, 'scraped_payouts');
+      const querySnapshot = await getDocs(payoutsCol);
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data() as ScrapedPayout;
+        localPayouts[data.transactionId] = data;
+      });
+      localStorage.setItem(`scraped_payouts_${uid}`, JSON.stringify(localPayouts));
+    } catch (err) {
+      console.error("Error fetching Firestore scraped payouts:", err);
+    }
+  }
+  return Object.values(localPayouts).sort((a, b) => b.settlementDate.localeCompare(a.settlementDate));
+}
+
+export async function saveScrapedPayouts(payouts: ScrapedPayout[]): Promise<void> {
+  const uid = getCurrentUid();
+  const localPayoutsStr = localStorage.getItem(`scraped_payouts_${uid}`);
+  const localPayouts: Record<string, ScrapedPayout> = localPayoutsStr ? JSON.parse(localPayoutsStr) : {};
+  
+  for (const payout of payouts) {
+    localPayouts[payout.transactionId] = payout;
+    if (!isSimulated && db && auth?.currentUser) {
+      try {
+        await setDoc(doc(db, 'users', uid, 'scraped_payouts', payout.transactionId), payout);
+      } catch (err) {
+        console.error("Error saving payout to Firestore:", err);
+      }
+    }
+  }
+  localStorage.setItem(`scraped_payouts_${uid}`, JSON.stringify(localPayouts));
+  window.dispatchEvent(new Event('scraped_payouts_updated'));
+}
+
+

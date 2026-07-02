@@ -147,7 +147,7 @@ export default function App() {
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'drivers', label: 'Drivers', icon: Users },
-    { id: 'vehicles', label: 'Vehicles', icon: Car },
+    { id: 'vehicles', label: 'Daily Reports', icon: ClipboardList },
     { id: 'banking', label: 'Banking', icon: Briefcase },
     { id: 'account', label: 'Account', icon: UserIcon },
     { id: 'import', label: 'Import HTML', icon: ClipboardList },

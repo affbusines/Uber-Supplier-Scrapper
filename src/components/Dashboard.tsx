@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Driver } from "../types";
 import Avatar from "./Avatar";
@@ -16,6 +16,13 @@ import {
   getGlobalSettings,
   getNotificationSettings,
   dismissRewardMilestone,
+  getDailyLogs,
+  saveDailyLog,
+  deleteDailyLog,
+  DailyLog,
+  getCurrentUid,
+  getScrapedPayouts,
+  ScrapedPayout,
 } from "../firebase";
 import {
   Search,
@@ -61,7 +68,21 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMode, setFilterMode] = useState<"all" | "active" | "inactive" | "changed" | "rewards" | "milestones" | "most_trips" | "f10" | "f50">("all");
+  const [filterMode, setFilterMode] = useState<
+    | "all"
+    | "active"
+    | "inactive"
+    | "changed"
+    | "rewards"
+    | "milestones"
+    | "most_trips"
+    | "f10"
+    | "f50"
+    | "status_active"
+    | "status_rejected"
+    | "status_applied"
+  >("all");
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [sortBy, setSortBy] = useState<"trips_desc" | "trips_asc" | "name_asc" | "newest_desc">("trips_desc");
   
   // Sub-tabs state
@@ -70,7 +91,7 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   
   // Driver Details State
   const [currentDriverDetail, setCurrentDriverDetail] = useState<Driver | null>(null);
-  const [detailTab, setDetailTab] = useState<'info' | 'documents' | 'rewards' | 'trips'>('info');
+  const [detailTab, setDetailTab] = useState<'info' | 'rewards'>('info');
 
   // Modals & Action States
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -96,6 +117,14 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   // Vehicles search state
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState("");
   const [vehiclesFilterMode, setVehiclesFilterMode] = useState<"all" | "active">("all");
+
+  // Daily reports state
+  const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
+  const [dailyPlate, setDailyPlate] = useState("");
+  const [dailyDate, setDailyDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [entryMode, setEntryMode] = useState<'single' | 'bulk'>('single');
+  const [bulkPlates, setBulkPlates] = useState("");
+  const [scrapedPayouts, setScrapedPayouts] = useState<ScrapedPayout[]>([]);
 
   // ── INCOGNITO PRIVACY SHIELD STATE & HELPERS ──
   const [privacyShield, setPrivacyShield] = useState<boolean>(
@@ -172,6 +201,27 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     return () => unsub();
   }, []);
 
+  const loadDailyLogs = async () => {
+    try {
+      const logs = await getDailyLogs();
+      setDailyLogs(logs);
+      const payouts = await getScrapedPayouts();
+      setScrapedPayouts(payouts);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    loadDailyLogs();
+    window.addEventListener("daily_logs_updated", loadDailyLogs);
+    window.addEventListener("scraped_payouts_updated", loadDailyLogs);
+    return () => {
+      window.removeEventListener("daily_logs_updated", loadDailyLogs);
+      window.removeEventListener("scraped_payouts_updated", loadDailyLogs);
+    };
+  }, []);
+
   // Reset page to 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -222,6 +272,9 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     );
 
     if (filterMode === "changed") return matchesQuery && drv.has_contact_change && !drv.deleted;
+    if (filterMode === "status_active") return matchesQuery && (drv.status === 'Active' || !drv.status) && !drv.deleted;
+    if (filterMode === "status_rejected") return matchesQuery && drv.status === 'Rejected' && !drv.deleted;
+    if (filterMode === "status_applied") return matchesQuery && drv.status === 'Applied' && !drv.deleted;
     if (filterMode === "rewards") return matchesQuery && drv.reward?.active && !drv.deleted;
     if (filterMode === "milestones") {
       if (drv.deleted || !drv.reward?.active) return false;
@@ -1630,7 +1683,7 @@ ${cardsHTML}
           <div className="space-y-4 flex-1 flex flex-col justify-between">
               
               {/* Filter pills row */}
-              <div className="flex items-center gap-1.5 py-1 overflow-x-auto no-scrollbar shrink-0 select-none">
+              <div className={`flex items-center gap-1.5 py-1 shrink-0 select-none ${showStatusDropdown ? 'overflow-visible' : 'overflow-x-auto no-scrollbar'}`}>
                 <button 
                   onClick={() => setFilterMode('all')}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border ${
@@ -1641,17 +1694,103 @@ ${cardsHTML}
                 >
                   All
                 </button>
-                <button 
-                  onClick={() => setFilterMode(filterMode === 'changed' ? 'all' : 'changed')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border flex items-center gap-1 ${
-                    filterMode === 'changed' 
-                      ? 'bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 border-amber-200 dark:border-amber-900' 
-                      : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  <span>Status</span>
-                  <ChevronRight size={10} className="rotate-90 stroke-[3]" />
-                </button>
+                <div className="relative shrink-0">
+                  <button 
+                    onClick={() => setShowStatusDropdown(prev => !prev)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border flex items-center gap-1 active:scale-[0.97] ${
+                      ['status_active', 'status_rejected', 'status_applied', 'changed'].includes(filterMode)
+                        ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white' 
+                        : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span>
+                      {filterMode === 'status_active' ? 'Status: Active' :
+                       filterMode === 'status_rejected' ? 'Status: Rejected' :
+                       filterMode === 'status_applied' ? 'Status: Applied' :
+                       filterMode === 'changed' ? 'Status: Contact Change' :
+                       'Status'}
+                    </span>
+                    <ChevronRight size={10} className={`stroke-[3] transition-transform duration-200 ${showStatusDropdown ? 'rotate-270' : 'rotate-90'}`} />
+                  </button>
+                  <AnimatePresence>
+                    {showStatusDropdown && (
+                      <>
+                        {/* Backdrop */}
+                        <div className="fixed inset-0 z-40" onClick={() => setShowStatusDropdown(false)} />
+                        {/* Dropdown */}
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+                          className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden"
+                          style={{ transformOrigin: 'top left' }}
+                        >
+                          <button
+                            onClick={() => {
+                              setFilterMode('status_active');
+                              setShowStatusDropdown(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold ${
+                              filterMode === 'status_active' ? 'text-[#06C167] bg-emerald-50/10' : 'text-black dark:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                              <span>Active</span>
+                            </div>
+                            {filterMode === 'status_active' && <Check size={14} className="stroke-[3]" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFilterMode('status_applied');
+                              setShowStatusDropdown(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold border-t border-zinc-100 dark:border-zinc-800 ${
+                              filterMode === 'status_applied' ? 'text-blue-500 bg-blue-50/10' : 'text-black dark:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-blue-500" />
+                              <span>Applied</span>
+                            </div>
+                            {filterMode === 'status_applied' && <Check size={14} className="stroke-[3]" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFilterMode('status_rejected');
+                              setShowStatusDropdown(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold border-t border-zinc-100 dark:border-zinc-800 ${
+                              filterMode === 'status_rejected' ? 'text-red-500 bg-red-50/10' : 'text-black dark:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-red-500" />
+                              <span>Rejected</span>
+                            </div>
+                            {filterMode === 'status_rejected' && <Check size={14} className="stroke-[3]" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFilterMode('changed');
+                              setShowStatusDropdown(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold border-t border-zinc-100 dark:border-zinc-800 ${
+                              filterMode === 'changed' ? 'text-amber-500 bg-amber-50/10' : 'text-black dark:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-amber-500" />
+                              <span>Contact Change</span>
+                            </div>
+                            {filterMode === 'changed' && <Check size={14} className="stroke-[3]" />}
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
                 <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all shrink-0 flex items-center gap-1">
                   <span>Assignment</span>
                   <ChevronRight size={10} className="rotate-90 stroke-[3]" />
@@ -1941,15 +2080,98 @@ ${cardsHTML}
               {renderTablePagination()}
 
             </div>
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
-  // ────────────────────────────────────────────────────────
-  // 3. VEHICLES VIEW (SCREENSHOT 1)
-  // ────────────────────────────────────────────────────────
-  const renderVehiclesView = () => {
+    // ────────────────────────────────────────────────────────
+    // 3. VEHICLES VIEW (SCREENSHOT 1)
+    // ────────────────────────────────────────────────────────
+    const renderVehiclesView = () => {
+      const myUid = getCurrentUid();
+      const myLogs = dailyLogs.filter(l => l.partnerId === myUid);
+
+      const getWeekNumber = (dateStr: string): string => {
+        const d = new Date(dateStr);
+        const date = new Date(d.getTime());
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+        const week1 = new Date(date.getFullYear(), 0, 4);
+        return `${date.getFullYear()}-W${Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7) + 1}`;
+      };
+
+      const handleAddDailyLog = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (entryMode === 'single') {
+        if (!dailyPlate || !dailyDate) return;
+        const cleanPlate = dailyPlate.trim().toUpperCase();
+        const newLog: DailyLog = {
+          id: `log_${Date.now()}`,
+          date: dailyDate,
+          partnerId: myUid,
+          vehiclePlate: cleanPlate,
+          submittedAt: new Date().toISOString()
+        };
+        try {
+          await saveDailyLog(newLog);
+          setDailyPlate("");
+          const logs = await getDailyLogs();
+          setDailyLogs(logs);
+          showToast("success", `Vehicle ${cleanPlate} added to your daily log.`);
+        } catch (err) {
+          showToast("error", "Failed to save daily log.");
+        }
+      } else {
+        if (!bulkPlates.trim() || !dailyDate) return;
+        const platesArray = bulkPlates
+          .split(/[\s,;\n]+/)
+          .map(p => p.trim().toUpperCase())
+          .filter(p => p.length > 0);
+
+        if (platesArray.length === 0) {
+          showToast("error", "No valid vehicle plates found in input.");
+          return;
+        }
+
+        try {
+          let count = 0;
+          await Promise.all(
+            platesArray.map(async (plate, idx) => {
+              const newLog: DailyLog = {
+                id: `log_${Date.now()}_${idx}`,
+                date: dailyDate,
+                partnerId: myUid,
+                vehiclePlate: plate,
+                submittedAt: new Date().toISOString()
+              };
+              await saveDailyLog(newLog);
+              count++;
+            })
+          );
+          setBulkPlates("");
+          const logs = await getDailyLogs();
+          setDailyLogs(logs);
+          showToast("success", `Successfully added ${count} vehicle logs.`);
+        } catch (err) {
+          showToast("error", "Failed to save some daily logs.");
+        }
+      }
+    };
+
+    const handleDeleteDailyLog = async (id: string) => {
+      if (confirm("Remove this vehicle log?")) {
+        try {
+          await deleteDailyLog(id);
+          const logs = await getDailyLogs();
+          setDailyLogs(logs);
+          showToast("info", "Vehicle log removed.");
+        } catch (err) {
+          showToast("error", "Failed to delete daily log.");
+        }
+      }
+    };
+
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
@@ -1962,159 +2184,167 @@ ${cardsHTML}
           </div>
         </header>
 
-        <div className="px-4 sm:px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto select-none">
+        <div className="px-4 sm:px-6 space-y-6 pb-8 pt-5 max-w-4xl w-full mx-auto select-none">
           <div className="flex items-center justify-between shrink-0">
-            <h1 className="text-4xl font-extrabold text-black dark:text-white tracking-tight leading-none">Vehicles</h1>
-            <button 
-              onClick={() => showToast("info", "Add vehicle form coming soon...")}
-              className="interactive-button bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black rounded-lg p-2.5 px-4 text-xs font-bold flex items-center gap-1.5"
-            >
-              <Car size={14} className="fill-current" />
-              <span>Add Vehicle</span>
-            </button>
+            <h1 className="text-4xl font-extrabold text-black dark:text-white tracking-tight leading-none">Daily Reports</h1>
           </div>
 
-          {/* Sub-Filters & Search panel matching Screenshot 1 */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 bg-white dark:bg-zinc-950 pt-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-black dark:bg-white text-white dark:text-black border border-black dark:border-white">
-                All
-              </button>
-              <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-850 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 flex items-center gap-1">
-                <span>Status</span>
-                <ChevronRight size={10} className="rotate-90 stroke-[3]" />
-              </button>
-              <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-850 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 flex items-center gap-1">
-                <span>Assignment</span>
-                <ChevronRight size={10} className="rotate-90 stroke-[3]" />
-              </button>
-              <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-850 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 flex items-center gap-1">
-                <span>Documents</span>
-                <ChevronRight size={10} className="rotate-90 stroke-[3]" />
-              </button>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Input Form Column */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-4 h-max">
+              <div className="border-b border-zinc-100 dark:border-zinc-800 pb-2">
+                <h3 className="text-[16px] font-extrabold text-black dark:text-white tracking-tight">
+                  Report Vehicle Operation
+                </h3>
+              </div>
+
+              {/* Mode Toggle */}
+              <div className="flex bg-zinc-100 dark:bg-zinc-800/80 rounded-lg p-0.5 w-full">
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('single')}
+                  className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                    entryMode === 'single'
+                      ? "bg-white dark:bg-zinc-900 text-black dark:text-white shadow-xs"
+                      : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-650"
+                  }`}
+                >
+                  Single Entry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('bulk')}
+                  className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                    entryMode === 'bulk'
+                      ? "bg-white dark:bg-zinc-900 text-black dark:text-white shadow-xs"
+                      : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-650"
+                  }`}
+                >
+                  Bulk Entry
+                </button>
+              </div>
+
+              <form onSubmit={handleAddDailyLog} className="space-y-4 text-xs font-bold">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    Operation Date:
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={dailyDate}
+                    onChange={(e) => setDailyDate(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-bold text-black dark:text-white"
+                  />
+                </div>
+
+                {entryMode === 'single' ? (
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Vehicle License Plate:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. DHM-GHA-392604"
+                      value={dailyPlate}
+                      onChange={(e) => setDailyPlate(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-bold text-black dark:text-white uppercase placeholder-zinc-400 dark:placeholder-zinc-500"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Vehicle License Plates (Bulk):
+                    </label>
+                    <textarea
+                      required
+                      placeholder="Enter plates separated by commas, spaces, or newlines (e.g. DHM-GHA-392604, DHM-GHA-392605)"
+                      rows={5}
+                      value={bulkPlates}
+                      onChange={(e) => setBulkPlates(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-semibold text-black dark:text-white uppercase placeholder-zinc-400 dark:placeholder-zinc-500 resize-none font-mono"
+                    />
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-black hover:bg-zinc-850 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-[0.97]"
+                >
+                  <Plus size={14} className="stroke-[2.5]" />
+                  <span>{entryMode === 'single' ? 'Add Vehicle Log' : 'Bulk Add Vehicles'}</span>
+                </button>
+              </form>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="bg-zinc-100 dark:bg-zinc-900 rounded-lg p-1.5 px-3 text-xs font-bold text-black dark:text-white border border-transparent">
-                License Plate
-              </div>
-              <div className="relative max-w-xs">
-                <Search size={13} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                <input
-                  type="text"
-                  placeholder="Search Vehicles"
-                  value={vehicleSearchQuery}
-                  onChange={(e) => setVehicleSearchQuery(e.target.value)}
-                  className="bg-zinc-100 dark:bg-zinc-900 border-none rounded-lg p-2 pl-8 text-xs font-semibold outline-none focus:ring-1 focus:ring-black dark:focus:ring-white w-48 text-black dark:text-white"
-                />
-              </div>
-            </div>
-          </div>
+            {/* Entries Log List Column */}
+            <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-4">
+              <h3 className="text-[16px] font-extrabold text-black dark:text-white tracking-tight border-b border-zinc-100 dark:border-zinc-800 pb-2 flex justify-between items-center">
+                <span>My Daily Vehicle Logs ({myLogs.length})</span>
+                <span className="text-[10px] font-mono font-bold text-zinc-400">Total System Logs: {dailyLogs.length}</span>
+              </h3>
+              
+              <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
+                {myLogs.length === 0 ? (
+                  <div className="text-center py-20 text-zinc-450 dark:text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold">
+                    You haven't reported driving any vehicles yet. Submit the form on the left to start.
+                  </div>
+                ) : (
+                  myLogs.map((log) => {
+                    const date = new Date(log.date);
+                    const weekNum = getWeekNumber(log.date);
+                    
+                    // Match with a claimed payout for this user
+                    const matchingPayout = scrapedPayouts.find(p => 
+                      p.status === 'claimed' &&
+                      p.attributedTo === myUid &&
+                      p.vehiclePlate === log.vehiclePlate &&
+                      getWeekNumber(p.settlementDate) === weekNum
+                    );
 
-          {/* Vehicles Data Table matching Screenshot 1 */}
-          <div className="hidden md:block flex-1 overflow-x-auto border border-zinc-150 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-900 shadow-xs">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-150 dark:border-zinc-800 text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider select-none">
-                  <th className="font-bold py-3.5">Vehicle / ID</th>
-                  <th className="font-bold py-3.5">Status</th>
-                  <th className="font-bold py-3.5">VIN & License plate</th>
-                  <th className="font-bold py-3.5">Assignment</th>
-                  <th className="font-bold py-3.5 text-center">Vehicle docs</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-[13.5px]">
-                {paginatedVehicles.map((v) => (
-                  <tr key={v.id} className="hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20 transition">
-                    <td className="py-4 border-b border-zinc-100 dark:border-zinc-800">
-                      <div className="flex items-center gap-3.5">
-                        <img 
-                          src={v.photo} 
-                          alt={v.name} 
-                          className="w-12 h-9 rounded object-cover bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0" 
-                        />
-                        <span className="font-bold text-black dark:text-white">{v.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 border-b border-zinc-100 dark:border-zinc-800">
-                      <span className="bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400 text-[10.5px] font-black px-2.5 py-0.5 rounded flex items-center gap-1 w-max">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#06C167]"></span>
-                        {v.status}
-                      </span>
-                    </td>
-                    <td className="py-4 font-mono font-semibold text-zinc-800 dark:text-zinc-200 border-b border-zinc-100 dark:border-zinc-800">{v.plate}</td>
-                    <td className="py-4 font-bold text-zinc-750 dark:text-zinc-350 border-b border-zinc-100 dark:border-zinc-800">{v.assignment}</td>
-                    <td className="py-4 text-center border-b border-zinc-100 dark:border-zinc-800">
-                      <button 
-                        onClick={() => showToast("info", "Opening vehicle documents details...")}
-                        className="interactive-button w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-black dark:text-white mx-auto"
+                    return (
+                      <div
+                        key={log.id}
+                        className="flex items-center justify-between gap-4 p-3 bg-zinc-50/50 dark:bg-zinc-955/20 border border-zinc-150/40 dark:border-zinc-800/40 rounded-xl text-xs"
                       >
-                        <ChevronRight size={14} className="stroke-[2.5]" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-black dark:text-white text-sm tracking-wide uppercase">
+                              {log.vehiclePlate}
+                            </span>
+                            {matchingPayout ? (
+                              <span className="text-[9px] bg-emerald-50 dark:bg-emerald-950/30 text-[#06C167] border border-emerald-200 dark:border-emerald-900/50 px-1.5 py-0.5 rounded font-black flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-[#06C167] rounded-full"></span>
+                                Payout Done BDT {matchingPayout.amount.toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] bg-zinc-100 dark:bg-zinc-800 text-zinc-450 dark:text-zinc-500 px-1.5 py-0.5 rounded font-extrabold">
+                                Pending Payout
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block mt-1">
+                            Date: {date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        </div>
 
-          {/* Mobile Vehicles Cards List */}
-          <div className="block md:hidden space-y-4">
-            {paginatedVehicles.length === 0 ? (
-              <div className="py-12 text-center text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-                <p className="text-sm font-bold text-black dark:text-white">No Vehicles Found</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {paginatedVehicles.map((v) => (
-                  <div 
-                    key={v.id} 
-                    className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col gap-4"
-                  >
-                    {/* Header: Photo & Name & Status */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        <img 
-                          src={v.photo} 
-                          alt={v.name} 
-                          className="w-14 h-10 rounded object-cover bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shrink-0" 
-                        />
-                        <div className="min-w-0">
-                          <h3 className="font-extrabold text-[15px] text-black dark:text-white leading-tight">{v.name}</h3>
-                          <span className="text-[10px] text-zinc-450 dark:text-zinc-550 block mt-1 font-mono">{v.plate}</span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleDeleteDailyLog(log.id)}
+                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg transition cursor-pointer"
+                            title="Delete vehicle log"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </div>
-                      <span className="bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400 text-[10px] font-black px-2.5 py-0.5 rounded flex items-center gap-1 shrink-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#06C167]"></span>
-                        {v.status}
-                      </span>
-                    </div>
-
-                    {/* Details: Assignment & Document Action */}
-                    <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3.5 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-550 uppercase tracking-widest block mb-0.5">Assignment</span>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200">{v.assignment}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-555 uppercase tracking-widest block mb-0.5 text-right">Docs</span>
-                        <button 
-                          onClick={() => showToast("info", "Opening vehicle documents details...")}
-                          className="interactive-button w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-black dark:text-white ml-auto"
-                        >
-                          <ChevronRight size={14} className="stroke-[2.5]" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
-            )}
+            </div>
           </div>
-
-          {/* Footer Pagination */}
-          {renderVehiclesTablePagination(filteredVehicles.length)}
-
         </div>
       </div>
     );
@@ -2543,13 +2773,11 @@ ${cardsHTML}
             </div>
           </div>
 
-          {/* Sub-navigation Tabs: Info, Documents, Rewards, Trips */}
+          {/* Sub-navigation Tabs: Info, Rewards */}
           <div className="flex border-b border-zinc-150 dark:border-zinc-800 relative shrink-0">
             {[
               { id: 'info', label: 'General Info' },
-              { id: 'documents', label: 'Documents' },
-              { id: 'rewards', label: 'Rewards Tracker' },
-              { id: 'trips', label: 'Recent Trips' }
+              { id: 'rewards', label: 'Rewards Tracker' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -2564,8 +2792,8 @@ ${cardsHTML}
             <div 
               className="absolute bottom-0 h-[2.5px] bg-black dark:bg-white transition-all duration-300"
               style={{
-                width: '25%',
-                left: detailTab === 'info' ? '0%' : detailTab === 'documents' ? '25%' : detailTab === 'rewards' ? '50%' : '75%'
+                width: '50%',
+                left: detailTab === 'info' ? '0%' : '50%'
               }}
             />
           </div>
@@ -2676,58 +2904,7 @@ ${cardsHTML}
             </div>
           )}
 
-          {detailTab === 'documents' && (
-            <div className="space-y-6 animate-enter">
-              <div className="space-y-3 select-none">
-                <h3 className="text-[17px] font-extrabold text-black dark:text-white tracking-tight leading-none">Driver Requirements Checklist</h3>
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-800 shadow-xs max-w-lg">
-                  <div 
-                    onClick={() => showToast("info", "NID Back verified.")}
-                    className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer interactive-button"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-bold text-[15.5px] text-black dark:text-white">NID Back</span>
-                      <span className="text-[11.5px] text-zinc-500 dark:text-zinc-400 font-bold">Optional</span>
-                    </div>
-                    <ChevronRight size={16} className="text-zinc-450 dark:text-zinc-500 stroke-[2.5]" />
-                  </div>
 
-                  <div 
-                    onClick={() => showToast("info", "Driver's License verified.")}
-                    className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer interactive-button"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-bold text-[15.5px] text-black dark:text-white">Driver's License</span>
-                      <span className="text-[11.5px] text-[#06C167] font-bold">Completed</span>
-                    </div>
-                    <ChevronRight size={16} className="text-zinc-450 dark:text-zinc-500 stroke-[2.5]" />
-                  </div>
-
-                  <div 
-                    onClick={() => showToast("info", "NID Front verified.")}
-                    className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer interactive-button"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-bold text-[15.5px] text-black dark:text-white">NID Front</span>
-                      <span className="text-[11.5px] text-[#06C167] font-bold">Completed</span>
-                    </div>
-                    <ChevronRight size={16} className="text-zinc-450 dark:text-zinc-500 stroke-[2.5]" />
-                  </div>
-
-                  <div 
-                    onClick={() => showToast("info", "Profile Picture verified.")}
-                    className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer interactive-button"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-bold text-[15.5px] text-black dark:text-white">Profile Picture</span>
-                      <span className="text-[11.5px] text-[#06C167] font-bold">Completed</span>
-                    </div>
-                    <ChevronRight size={16} className="text-zinc-450 dark:text-zinc-500 stroke-[2.5]" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {detailTab === 'rewards' && (
             <div className="space-y-6 animate-enter">
@@ -2960,84 +3137,7 @@ ${cardsHTML}
             </div>
           )}
 
-          {detailTab === 'trips' && (
-            <div className="space-y-6 animate-enter">
-              {/* Trip stats card */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-xs">
-                <div>
-                  <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Total Trips</span>
-                  <span className="text-[18px] font-mono font-extrabold text-black dark:text-white">{drv.tip_count}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Driver Rating</span>
-                  <span className="text-[18px] font-mono font-extrabold text-[#06C167]">4.92 ★</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Acceptance Rate</span>
-                  <span className="text-[18px] font-mono font-extrabold text-black dark:text-white">92.4%</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Completion Rate</span>
-                  <span className="text-[18px] font-mono font-extrabold text-[#06C167]">97.8%</span>
-                </div>
-              </div>
 
-              {/* Trip list table */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs">
-                <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 select-none">
-                  <h4 className="font-extrabold text-[15.5px] text-black dark:text-white">Recent Trips History</h4>
-                </div>
-                <div className="overflow-x-auto text-xs">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-150 dark:border-zinc-800 text-[10.5px] font-bold text-zinc-450 uppercase tracking-wider select-none">
-                        <th className="py-3 font-bold">Trip ID</th>
-                        <th className="py-3 font-bold">Date & Time</th>
-                        <th className="py-3 font-bold">Distance</th>
-                        <th className="py-3 font-bold">Fare Amount</th>
-                        <th className="py-3 font-bold">Status</th>
-                        <th className="py-3 font-bold">Rating</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 text-[12.5px] text-zinc-800 dark:text-zinc-200">
-                      <tr>
-                        <td className="py-3.5 font-mono font-bold">TRP-9840</td>
-                        <td className="py-3.5 font-bold">Jun 15, 2026, 08:34 PM</td>
-                        <td className="py-3.5">8.2 km</td>
-                        <td className="py-3.5 font-mono font-bold text-black dark:text-white">BDT 420.00</td>
-                        <td className="py-3.5"><span className="text-[#06C167] font-black uppercase text-[10.5px]">Completed</span></td>
-                        <td className="py-3.5 text-[#06C167] font-bold">5.0 ★</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3.5 font-mono font-bold">TRP-9231</td>
-                        <td className="py-3.5 font-bold">Jun 14, 2026, 02:15 PM</td>
-                        <td className="py-3.5">12.4 km</td>
-                        <td className="py-3.5 font-mono font-bold text-black dark:text-white">BDT 630.00</td>
-                        <td className="py-3.5"><span className="text-[#06C167] font-black uppercase text-[10.5px]">Completed</span></td>
-                        <td className="py-3.5 text-[#06C167] font-bold">5.0 ★</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3.5 font-mono font-bold">TRP-8819</td>
-                        <td className="py-3.5 font-bold">Jun 12, 2026, 11:05 AM</td>
-                        <td className="py-3.5">3.5 km</td>
-                        <td className="py-3.5 font-mono font-bold text-black dark:text-white">BDT 180.00</td>
-                        <td className="py-3.5"><span className="text-[#06C167] font-black uppercase text-[10.5px]">Completed</span></td>
-                        <td className="py-3.5 text-amber-500 font-bold">4.5 ★</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3.5 font-mono font-bold">TRP-8102</td>
-                        <td className="py-3.5 font-bold">Jun 10, 2026, 06:45 PM</td>
-                        <td className="py-3.5">5.1 km</td>
-                        <td className="py-3.5 font-mono font-bold text-black dark:text-white">BDT 280.00</td>
-                        <td className="py-3.5"><span className="text-[#06C167] font-black uppercase text-[10.5px]">Completed</span></td>
-                        <td className="py-3.5 text-[#06C167] font-bold">5.0 ★</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
