@@ -295,9 +295,11 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
               <div className="text-center py-10 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-zinc-150 dark:border-zinc-800 border-dashed">
                 <CheckCircle size={32} className="text-[#06C167]" />
                 <p className="text-xs font-bold text-zinc-650">No Changes Detected</p>
-                <p className="text-[11px] text-zinc-455 mt-0.5">Scraped data exactly matches current database drivers.</p>
+                <p className="text-[11px] text-zinc-450 mt-0.5">Scraped data exactly matches current database drivers.</p>
               </div>
             )}
+
+            {/* Added Drivers */}
             {added.map((drv) => (
               <div key={drv.uuid} className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-950/20">
                 <div className="bg-red-50/10 dark:bg-red-950/5 border border-dashed border-red-255 dark:border-red-900/30 rounded-xl p-4 flex items-center justify-center text-xs font-bold text-red-500/80">
@@ -405,6 +407,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           encrypted: true,
           maxPages: maxPages > 0 ? maxPages : 0,
           startPage: startPage > 1 ? startPage : 1,
+          uid: uid,
         }),
       });
 

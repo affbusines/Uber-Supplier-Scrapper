@@ -831,6 +831,11 @@ ${cardsHTML}
                                     {drv.status}
                                   </span>
                                 )}
+                                {drv.flow && (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700/80">
+                                    {drv.flow}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1117,6 +1122,11 @@ ${cardsHTML}
                                     'bg-red-500'
                                   }`} />
                                   {drv.status}
+                                </span>
+                              )}
+                              {drv.flow && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700/80">
+                                  {drv.flow}
                                 </span>
                               )}
                             </div>
@@ -1719,7 +1729,7 @@ ${cardsHTML}
                                     {drv.status || 'Active'}
                                   </span>
                                   <span className="text-zinc-400 dark:text-zinc-500 text-xs font-bold">
-                                    • {drv.reward?.active ? "On trip" : "Unassigned"}
+                                    • {drv.flow || "Unverified"}
                                   </span>
                                 </div>
                               </div>
