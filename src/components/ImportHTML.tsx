@@ -295,14 +295,12 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
               <div className="text-center py-10 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-zinc-150 dark:border-zinc-800 border-dashed">
                 <CheckCircle size={32} className="text-[#06C167]" />
                 <p className="text-xs font-bold text-zinc-650">No Changes Detected</p>
-                <p className="text-[11px] text-zinc-450 mt-0.5">Scraped data exactly matches current database drivers.</p>
+                <p className="text-[11px] text-zinc-455 mt-0.5">Scraped data exactly matches current database drivers.</p>
               </div>
             )}
-
-            {/* Added Drivers */}
             {added.map((drv) => (
               <div key={drv.uuid} className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-950/20">
-                <div className="bg-red-50/10 dark:bg-red-950/5 border border-dashed border-red-250 dark:border-red-900/30 rounded-xl p-4 flex items-center justify-center text-xs font-bold text-red-500/80">
+                <div className="bg-red-50/10 dark:bg-red-950/5 border border-dashed border-red-255 dark:border-red-900/30 rounded-xl p-4 flex items-center justify-center text-xs font-bold text-red-500/80">
                   <span>Empty / New Entry</span>
                 </div>
                 <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-150 dark:border-emerald-900/40 rounded-xl p-4 flex gap-3 min-w-0">
@@ -314,6 +312,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                       <span>📞 {drv.phone || "—"}</span>
                       <span>🚗 {drv.tip_count} trips</span>
                       <span className="col-span-2 truncate">✉️ {drv.email || "—"}</span>
+                      <span className="col-span-2">💼 Status: {drv.status || "Active"}</span>
                     </div>
                   </div>
                 </div>
@@ -325,7 +324,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
               <div key={item.new.uuid} className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-950/20">
                 {/* Left Side: Old Database Value */}
                 <div className="bg-red-50 dark:bg-red-950/15 border border-red-150 dark:border-red-900/40 rounded-xl p-4 flex gap-3 min-w-0">
-                  <span className="bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md h-max mt-0.5">BEFORE</span>
+                  <span className="bg-red-650 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md h-max mt-0.5">BEFORE</span>
                   <div className="min-w-0 space-y-1.5">
                     <span className="font-extrabold text-sm text-zinc-700 dark:text-zinc-300 uppercase block leading-tight">{item.old.name}</span>
                     <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 block truncate">{item.old.uuid}</span>
@@ -333,6 +332,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                       <span className={item.old.phone !== item.new.phone ? "text-red-750 dark:text-red-400 font-bold" : ""}>📞 {item.old.phone || "—"}</span>
                       <span className={item.old.tip_count !== item.new.tip_count ? "text-red-750 dark:text-red-400 font-bold" : ""}>🚗 {item.old.tip_count} trips</span>
                       <span className={`col-span-2 truncate ${item.old.email !== item.new.email ? "text-red-750 dark:text-red-400 font-bold" : ""}`}>✉️ {item.old.email || "—"}</span>
+                      <span className={`col-span-2 ${item.old.status !== item.new.status ? "text-red-750 dark:text-red-400 font-bold" : ""}`}>💼 Status: {item.old.status || "Active"}</span>
                     </div>
                   </div>
                 </div>
@@ -347,6 +347,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                       <span className={item.old.phone !== item.new.phone ? "text-emerald-700 dark:text-emerald-400 font-black" : ""}>📞 {item.new.phone || "—"}</span>
                       <span className={item.old.tip_count !== item.new.tip_count ? "text-emerald-700 dark:text-emerald-400 font-black" : ""}>🚗 {item.new.tip_count} trips</span>
                       <span className={`col-span-2 truncate ${item.old.email !== item.new.email ? "text-emerald-700 dark:text-emerald-400 font-black" : ""}`}>✉️ {item.new.email || "—"}</span>
+                      <span className={`col-span-2 ${item.old.status !== item.new.status ? "text-emerald-700 dark:text-emerald-400 font-black" : ""}`}>💼 Status: {item.new.status || "Active"}</span>
                     </div>
                   </div>
                 </div>
@@ -365,6 +366,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                       <span>📞 {drv.phone || "—"}</span>
                       <span>🚗 {drv.tip_count} trips</span>
                       <span className="col-span-2 truncate">✉️ {drv.email || "—"}</span>
+                      <span className="col-span-2">💼 Status: {drv.status || "Active"}</span>
                     </div>
                   </div>
                 </div>

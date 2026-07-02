@@ -392,7 +392,7 @@ export async function resetDatabase() {
  */
 export async function editDriver(
   uuid: string,
-  newValues: { name: string; email: string; phone: string }
+  newValues: { name: string; email: string; phone: string; status?: 'Active' | 'Applied' | 'Waitlisted' | 'Rejected' }
 ): Promise<void> {
   const nowStr = new Date().toISOString();
   let existingDrivers: Record<string, Driver> = {};
@@ -405,6 +405,7 @@ export async function editDriver(
         const existing = docSnap.data() as Driver;
         const updates: Partial<Driver> = {
           name: newValues.name,
+          status: newValues.status,
           last_updated: nowStr,
           edited_manually: true
         };
@@ -434,6 +435,7 @@ export async function editDriver(
   if (existing) {
     const updates: Partial<Driver> = {
       name: newValues.name,
+      status: newValues.status,
       last_updated: nowStr,
       edited_manually: true
     };

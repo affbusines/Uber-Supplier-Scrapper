@@ -29,6 +29,7 @@ export interface Driver {
   change_reviewed_at?: string;
   reward?: RewardState;
   source?: string;
+  status?: 'Active' | 'Applied' | 'Waitlisted' | 'Rejected';
 }
 
 export type ActiveTab = 

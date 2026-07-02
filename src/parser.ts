@@ -201,6 +201,21 @@ export function parseDriversFromHTML(htmlString: string): Omit<Driver, 'first_se
         }
       }
 
+      // 5. Compliance Status Parsing
+      let status: 'Active' | 'Applied' | 'Waitlisted' | 'Rejected' = 'Active';
+      const statusDot = row.querySelector('[data-testid="compliance-status-dot"]');
+      if (statusDot) {
+        const statusText = statusDot.parentElement?.textContent?.trim() || '';
+        if (statusText.includes('Applied')) status = 'Applied';
+        else if (statusText.includes('Waitlisted')) status = 'Waitlisted';
+        else if (statusText.includes('Rejected')) status = 'Rejected';
+      } else {
+        const text = row.textContent || '';
+        if (text.includes('Applied')) status = 'Applied';
+        else if (text.includes('Waitlisted')) status = 'Waitlisted';
+        else if (text.includes('Rejected')) status = 'Rejected';
+      }
+
       if (name && (email || phone)) {
         parsedDrivers.push({
           uuid: uuid || `drv-${index}`,
@@ -208,7 +223,8 @@ export function parseDriversFromHTML(htmlString: string): Omit<Driver, 'first_se
           photo_url: photo_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name.trim())}&backgroundColor=06C167&textColor=000`,
           tip_count,
           email: email.trim(),
-          phone: phone.trim()
+          phone: phone.trim(),
+          status
         });
       }
     } catch (e) {
@@ -272,6 +288,7 @@ export interface TextParsedDriver {
   tip_count: number;
   photo_url: string | null;
   source: string;
+  status?: 'Active' | 'Applied' | 'Waitlisted' | 'Rejected';
 }
 
 export function parseSingleDriverBlock(lines: string[]): TextParsedDriver | null {
@@ -281,7 +298,8 @@ export function parseSingleDriverBlock(lines: string[]): TextParsedDriver | null
     email: null as string | null,
     tip_count: 0,
     photo_url: null as string | null,   // always null for text paste method
-    source: 'text_paste'  // track how driver was added
+    source: 'text_paste',  // track how driver was added
+    status: null as string | null
   };
 
   for (let i = 0; i < lines.length; i++) {
@@ -311,6 +329,15 @@ export function parseSingleDriverBlock(lines: string[]): TextParsedDriver | null
       data.tip_count = parseInt(next, 10) || 0;
       continue;
     }
+
+    // Status — line after "Status"
+    if (line.toLowerCase() === 'status') {
+      const s = next.trim();
+      if (['Active', 'Applied', 'Waitlisted', 'Rejected'].includes(s)) {
+        data.status = s;
+      }
+      continue;
+    }
   }
 
   // Name or Email missing makes it invalid
@@ -328,7 +355,8 @@ export function parseSingleDriverBlock(lines: string[]): TextParsedDriver | null
     email: data.email,
     tip_count: data.tip_count,
     photo_url: data.photo_url,
-    source: data.source
+    source: data.source,
+    status: (data.status as any) || 'Active'
   };
 }
 
@@ -408,7 +436,10 @@ export const SAMPLE_HTML_BASELINE = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mehedi" alt="MD. MEHEDI HASAN" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">MD. MEHEDI HASAN</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      MD. MEHEDI HASAN
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Active</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1624618097</div>
       <div class="_css-fRzRxF text-gray-400 mt-0.5">01624618097ar@gmail.com</div>
@@ -421,7 +452,10 @@ export const SAMPLE_HTML_BASELINE = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rakib" alt="RAKIBUL HASAN" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">RAKIBUL HASAN</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      RAKIBUL HASAN
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Applied</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1712345678</div>
       <div class="_css-fRzRxF text-gray-400 mt-0.5">rakib.hasan@gmail.com</div>
@@ -434,7 +468,10 @@ export const SAMPLE_HTML_BASELINE = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Shafiq" alt="SHAFIQUL ISLAM" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">SHAFIQUL ISLAM</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      SHAFIQUL ISLAM
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Waitlisted</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1812345679</div>
       <div class="_css-fRzRxF text-gray-400 mt-0.5">shafiq@gmail.com</div>
@@ -447,7 +484,10 @@ export const SAMPLE_HTML_BASELINE = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tanvir" alt="TANVIR AHMED" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">TANVIR AHMED</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      TANVIR AHMED
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Rejected</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1912345680</div>
       <div class="_css-fRzRxF text-gray-400 mt-0.5">tanvir@gmail.com</div>
@@ -464,7 +504,10 @@ export const SAMPLE_HTML_UPDATED = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mehedi" alt="MD. MEHEDI HASAN" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">MD. MEHEDI HASAN</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      MD. MEHEDI HASAN
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Active</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1624618999</div> <!-- CHANGED PHONE -->
       <div class="_css-fRzRxF text-gray-400 mt-0.5">hasan.mehedi@gmail.com</div> <!-- CHANGED EMAIL -->
@@ -477,7 +520,10 @@ export const SAMPLE_HTML_UPDATED = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Rakib" alt="RAKIBUL HASAN" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">RAKIBUL HASAN</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      RAKIBUL HASAN
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Applied</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1712345678</div> 
       <div class="_css-fRzRxF text-gray-400 mt-0.5">rakib.hasan@gmail.com</div>
@@ -490,7 +536,10 @@ export const SAMPLE_HTML_UPDATED = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Shafiq" alt="SHAFIQUL ISLAM" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">SHAFIQUL ISLAM</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      SHAFIQUL ISLAM
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Waitlisted</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1812345679</div>
       <div class="_css-fRzRxF text-gray-400 mt-0.5">islam.shafiq@gmail.com</div> <!-- CHANGED EMAIL -->
@@ -503,7 +552,10 @@ export const SAMPLE_HTML_UPDATED = `
     <div class="avatar px-3" data-baseweb="avatar">
       <img class="w-10 h-10 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Tanvir" alt="TANVIR AHMED" />
     </div>
-    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">TANVIR AHMED</div>
+    <div class="name-cell flex-1 font-semibold text-gray-900 text-sm">
+      TANVIR AHMED
+      <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>Rejected</div>
+    </div>
     <div role="gridcell" class="contact-cell flex-1 text-xs">
       <div class="_css-laRbCo text-gray-700 font-medium">+880 1912345680</div>
       <div class="_css-fRzRxF text-gray-400 mt-0.5">tanvir@gmail.com</div>

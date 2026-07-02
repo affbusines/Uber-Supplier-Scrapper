@@ -10,6 +10,7 @@ export default function SandboxSimulator() {
       phone: "+880 1624618097",
       email: "01624618097ar@gmail.com",
       trips: 234,
+      status: "Active" as 'Active' | 'Applied' | 'Waitlisted' | 'Rejected',
     },
     {
       uuid: "2cf03e6a-7585-468c-92ce-d71c3fd18b71",
@@ -18,6 +19,7 @@ export default function SandboxSimulator() {
       phone: "+880 1712345678",
       email: "rakib.hasan@gmail.com",
       trips: 89,
+      status: "Applied" as 'Active' | 'Applied' | 'Waitlisted' | 'Rejected',
     },
     {
       uuid: "3df04e2a-8485-47cc-93ce-d81c3fd19b72",
@@ -26,6 +28,7 @@ export default function SandboxSimulator() {
       phone: "+880 1812345679",
       email: "shafiq@gmail.com",
       trips: 153,
+      status: "Waitlisted" as 'Active' | 'Applied' | 'Waitlisted' | 'Rejected',
     },
     {
       uuid: "4ef05e1a-9485-48cc-94ce-d91c3fd20b73",
@@ -34,6 +37,7 @@ export default function SandboxSimulator() {
       phone: "+880 1912345680",
       email: "tanvir@gmail.com",
       trips: 412,
+      status: "Rejected" as 'Active' | 'Applied' | 'Waitlisted' | 'Rejected',
     },
   ]);
 
@@ -50,7 +54,7 @@ export default function SandboxSimulator() {
 
   const [copied, setCopied] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ phone: "", email: "", trips: 0 });
+  const [editForm, setEditForm] = useState({ phone: "", email: "", trips: 0, status: "Active" as 'Active' | 'Applied' | 'Waitlisted' | 'Rejected' });
 
   // Generate Outer HTML which matches exactly what DOMParser expects
   const generateOuterHTML = () => {
@@ -61,7 +65,7 @@ export default function SandboxSimulator() {
       html += ` <div class="avatar px-3" data-baseweb="avatar">\n`;
       html += ` <img class="img-circle" src="https://api.dicebear.com/7.x/avataaars/svg?seed=${d.avatarSeed}" alt="${d.name}" />\n`;
       html += ` </div>\n`;
-      html += ` <div class="name-cell">${d.name}</div>\n`;
+      html += ` <div class="name-cell">${d.name} <div class="_css-jytlEP"><div data-baseweb="block" data-testid="compliance-status-dot" class="_css-gsfpnz _css-PKJb"></div>${d.status || 'Active'}</div></div>\n`;
       html += ` <div role="gridcell" class="contact-cell">\n`;
       html += ` <div class="_css-laRbCo">${d.phone}</div>\n`;
       html += ` <div class="_css-fRzRxF">${d.email}</div>\n`;
@@ -89,6 +93,7 @@ export default function SandboxSimulator() {
       phone: drivers[idx].phone,
       email: drivers[idx].email,
       trips: drivers[idx].trips,
+      status: drivers[idx].status || "Active",
     });
   };
 
@@ -100,6 +105,7 @@ export default function SandboxSimulator() {
       phone: editForm.phone,
       email: editForm.email,
       trips: Number(editForm.trips),
+      status: editForm.status as any,
     };
     setDrivers(updated);
     setEditingIndex(null);
@@ -208,8 +214,14 @@ export default function SandboxSimulator() {
                     className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700"
                   />
                   <div>
-                    <span className="block font-semibold text-xs text-zinc-100">
+                    <span className="block font-semibold text-xs text-zinc-100 flex items-center gap-1.5">
                       {drv.name}
+                      <span className={`w-1.5 h-1.5 rounded-full inline-block ${
+                        drv.status === 'Active' ? 'bg-emerald-500' :
+                        drv.status === 'Applied' ? 'bg-blue-500' :
+                        drv.status === 'Waitlisted' ? 'bg-amber-500' :
+                        'bg-red-500'
+                      }`} title={drv.status} />
                     </span>
                     <span className="block text-[10px] text-[var(--text-muted)] font-mono leading-none mt-0.5">
                       {drv.uuid.slice(0, 8)}...
@@ -252,7 +264,7 @@ export default function SandboxSimulator() {
                 <PenTool size={12} className="text-[var(--brand-primary)]" />
                 <span>Quick Update: {drivers[editingIndex].name}</span>
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-[10px] text-[var(--text-muted)] uppercase font-semibold mb-1">
                     Email
@@ -300,6 +312,26 @@ export default function SandboxSimulator() {
                     }
                     className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[var(--text-muted)] uppercase font-semibold mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        status: e.target.value as any,
+                      }))
+                    }
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)]"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Applied">Applied</option>
+                    <option value="Waitlisted">Waitlisted</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
                 </div>
               </div>
               <div className="flex items-center gap-2 pt-1.5 justify-end">

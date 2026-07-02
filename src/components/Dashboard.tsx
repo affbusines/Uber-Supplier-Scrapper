@@ -811,9 +811,27 @@ ${cardsHTML}
                               <span className="font-extrabold text-[14px] text-black dark:text-white uppercase tracking-tight leading-tight group-hover:underline">
                                 {drv.name || "UNNAMED DRIVER"}
                               </span>
-                              <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate max-w-[140px] mt-0.5")}>
-                                {drv.uuid}
-                              </span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate max-w-[145px]")}>
+                                  {drv.uuid}
+                                </span>
+                                {drv.status && (
+                                  <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none ${
+                                    drv.status === 'Active' ? 'text-emerald-600 dark:text-emerald-400' :
+                                    drv.status === 'Applied' ? 'text-blue-500 dark:text-blue-400' :
+                                    drv.status === 'Waitlisted' ? 'text-amber-500 dark:text-amber-400' :
+                                    'text-red-500 dark:text-red-400'
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                      drv.status === 'Active' ? 'bg-emerald-500 animate-pulse' :
+                                      drv.status === 'Applied' ? 'bg-blue-500' :
+                                      drv.status === 'Waitlisted' ? 'bg-amber-500' :
+                                      'bg-red-500'
+                                    }`} />
+                                    {drv.status}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -1081,9 +1099,27 @@ ${cardsHTML}
                             <h3 className="font-extrabold text-[15px] text-black dark:text-white tracking-tight leading-tight truncate uppercase">
                               {drv.name || "UNNAMED DRIVER"}
                             </h3>
-                            <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate block mt-0.5 max-w-[130px]")}>
-                              {drv.uuid}
-                            </span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate block max-w-[130px]")}>
+                                {drv.uuid}
+                              </span>
+                              {drv.status && (
+                                <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none ${
+                                  drv.status === 'Active' ? 'text-emerald-600 dark:text-emerald-400' :
+                                  drv.status === 'Applied' ? 'text-blue-500 dark:text-blue-400' :
+                                  drv.status === 'Waitlisted' ? 'text-amber-500 dark:text-amber-400' :
+                                  'text-red-500 dark:text-red-400'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    drv.status === 'Active' ? 'bg-emerald-500 animate-pulse' :
+                                    drv.status === 'Applied' ? 'bg-blue-500' :
+                                    drv.status === 'Waitlisted' ? 'bg-amber-500' :
+                                    'bg-red-500'
+                                  }`} />
+                                  {drv.status}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1668,9 +1704,19 @@ ${cardsHTML}
                                   {drv.name || "UNNAMED DRIVER"}
                                 </h3>
                                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                  <span className="bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400 text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-0.5">
-                                    <span className="w-1 h-1 rounded-full bg-[#06C167]"></span>
-                                    Active
+                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 select-none ${
+                                    drv.status === 'Active' ? 'bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400' :
+                                    drv.status === 'Applied' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-550 dark:text-blue-400' :
+                                    drv.status === 'Waitlisted' ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-550 dark:text-amber-400' :
+                                    'bg-red-50 dark:bg-red-950/30 text-red-550 dark:text-red-400'
+                                  }`}>
+                                    <span className={`w-1 h-1 rounded-full ${
+                                      drv.status === 'Active' ? 'bg-[#06C167] animate-pulse' :
+                                      drv.status === 'Applied' ? 'bg-blue-500' :
+                                      drv.status === 'Waitlisted' ? 'bg-amber-500' :
+                                      'bg-red-500'
+                                    }`}></span>
+                                    {drv.status || 'Active'}
                                   </span>
                                   <span className="text-zinc-400 dark:text-zinc-500 text-xs font-bold">
                                     • {drv.reward?.active ? "On trip" : "Unassigned"}
@@ -2452,8 +2498,16 @@ ${cardsHTML}
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 flex-wrap select-none text-[12px] font-bold">
-                  <span className="bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400 px-2 py-0.5 rounded flex items-center gap-0.5">
-                    ✓ Active
+                  <span className={`px-2 py-0.5 rounded flex items-center gap-1.5 uppercase select-none ${
+                    drv.status === 'Active' ? 'bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400' :
+                    drv.status === 'Applied' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-550 dark:text-blue-400' :
+                    drv.status === 'Waitlisted' ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-550 dark:text-amber-400' :
+                    'bg-red-50 dark:bg-red-950/30 text-red-550 dark:text-red-400'
+                  }`}>
+                    {drv.status === 'Active' ? '✓ Active' :
+                     drv.status === 'Applied' ? '• Applied' :
+                     drv.status === 'Waitlisted' ? '• Waitlisted' :
+                     '✗ Rejected'}
                   </span>
                   <span className="text-zinc-500 dark:text-zinc-400">
                     • Offline
@@ -3061,6 +3115,20 @@ ${cardsHTML}
                   className="w-full bg-zinc-100 border-none rounded-lg p-2 text-xs font-semibold focus:ring-1 focus:ring-black outline-none"
                 />
               </div>
+
+              <div>
+                <label className="block text-zinc-700 font-bold mb-1">Status</label>
+                <select
+                  value={editingDriver.status || "Active"}
+                  onChange={(e) => setEditingDriver({ ...editingDriver, status: e.target.value as any })}
+                  className="w-full bg-zinc-100 border-none rounded-lg p-2 text-xs font-semibold focus:ring-1 focus:ring-black outline-none"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Applied">Applied</option>
+                  <option value="Waitlisted">Waitlisted</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100">
@@ -3081,6 +3149,7 @@ ${cardsHTML}
                       name: editingDriver.name.trim(),
                       email: editingDriver.email.trim(),
                       phone: editingDriver.phone.trim(),
+                      status: editingDriver.status || "Active",
                     });
                     showToast("success", `Updated ${editingDriver.name} successfully!`);
                     setEditingDriver(null);
@@ -3090,6 +3159,7 @@ ${cardsHTML}
                         name: editingDriver.name.trim(),
                         email: editingDriver.email.trim(),
                         phone: editingDriver.phone.trim(),
+                        status: editingDriver.status || "Active",
                       });
                     }
                   } catch (e) {
