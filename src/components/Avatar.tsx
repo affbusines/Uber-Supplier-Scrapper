@@ -15,14 +15,13 @@ export function getInitials(name: string): string {
 }
 
 export function getAvatarColor(name: string): string {
-  // Consistent color from name — same name = same color always
+  // Consistent monochrome/grayscale colors from name
   const colors = [
-    "#06C167", // Uber Green
-    "#276EF1", // Uber Blue
-    "#FFC043", // Yellow
-    "#E02020", // Red
-    "#9747FF", // Purple
-    "#00A9CE", // Teal
+    "#000000", // Ink Black
+    "#1a1a1a", // Charcoal
+    "#282828", // Black Elevated
+    "#4b4b4b", // Hairline Mid
+    "#5e5e5e", // Body Gray
   ];
   const index = name.charCodeAt(0) % colors.length;
   return colors[index];
@@ -52,7 +51,7 @@ export default function Avatar({
   // Initials fallback
   return (
     <div
-      className={`rounded-full shrink-0 flex items-center justify-center font-black text-black border border-[var(--border-base)] ${className}`}
+      className={`rounded-full shrink-0 flex items-center justify-center font-black text-white border border-[var(--border-base)] ${className}`}
       style={{
         width: size,
         height: size,

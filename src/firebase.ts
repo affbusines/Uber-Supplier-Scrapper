@@ -1036,8 +1036,10 @@ export async function getPlateOwner(plate: string): Promise<PlateOwnership | nul
   const key = plate.trim().toUpperCase();
   const registry = getLocalPlateRegistry();
 
+  // Check local first
   if (registry[key]) return registry[key];
 
+  // Then check Firestore (live mode)
   if (!isSimulated && db && auth?.currentUser) {
     try {
       const docRef = doc(db, 'shared_plates', key);
@@ -1097,7 +1099,7 @@ export async function releasePlateOwnership(plate: string, requestingUid: string
   const key = plate.trim().toUpperCase();
   const existing = await getPlateOwner(key);
 
-  if (!existing) return;
+  if (!existing) return; // Nothing to release
   if (existing.ownerId !== requestingUid) {
     throw new Error('RELEASE_DENIED: You do not own this plate.');
   }

@@ -370,8 +370,8 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       const rewardBadge = !d.reward?.active
         ? `<span style='color:#9ca3af'>Inactive</span>`
         : d.reward.completed
-        ? `<span style='color:#06C167;font-weight:800'>🎉 Complete</span>`
-        : `<span style='color:#6366f1;font-weight:800'>Active</span>`;
+        ? `<span style='color:#000000;font-weight:800'>🎉 Complete</span>`
+        : `<span style='color:#4b4b4b;font-weight:800'>Active</span>`;
 
       const photoHTML = d.photo_url
         ? `<img src="${d.photo_url}" alt="${d.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
@@ -974,7 +974,7 @@ ${cardsHTML}
                               <span>▶ Start Reward</span>
                             </button>
                           ) : drv.reward.completed ? (
-                            <span className="bg-emerald-50 dark:bg-emerald-950/30 text-[#06C167] border border-emerald-200 dark:border-emerald-900/40 text-[11px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 w-max select-none">
+                            <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 w-max select-none">
                               <span>🎉 Reward Complete!</span>
                             </span>
                           ) : (
@@ -1021,7 +1021,7 @@ ${cardsHTML}
                                         showToast("error", "Milestone payout approval failed.");
                                       }
                                     }}
-                                    className="interactive-button px-2.5 py-1 bg-[#06C167] hover:bg-[#05a858] text-white text-[10px] font-black rounded-md shadow-xs cursor-pointer flex items-center gap-0.5 justify-center w-max uppercase tracking-wider"
+                                    className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10px] font-bold rounded-full shadow-xs cursor-pointer flex items-center gap-0.5 justify-center w-max uppercase tracking-wider"
                                   >
                                     <span>Done F10</span>
                                   </button>
@@ -1036,7 +1036,7 @@ ${cardsHTML}
                                         showToast("error", "Milestone payout approval failed.");
                                       }
                                     }}
-                                    className="interactive-button px-2.5 py-1 bg-[#06C167] hover:bg-[#05a858] text-white text-[10px] font-black rounded-md shadow-xs cursor-pointer flex items-center gap-0.5 justify-center w-max uppercase tracking-wider"
+                                    className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10px] font-bold rounded-full shadow-xs cursor-pointer flex items-center gap-0.5 justify-center w-max uppercase tracking-wider"
                                   >
                                     <span>Done F50</span>
                                   </button>
@@ -1266,26 +1266,26 @@ ${cardsHTML}
                                 setRewardTrackingDriver(drv);
                                 setRewardCycleInput(52);
                               }}
-                              className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-xs cursor-pointer select-none"
+                              className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10px] font-bold rounded-full flex items-center gap-1 shadow-xs cursor-pointer select-none"
                             >
                               <span>▶ Start</span>
                             </button>
                           ) : drv.reward.completed ? (
-                            <span className="bg-emerald-50 dark:bg-emerald-950/30 text-[#06C167] border border-emerald-200 dark:border-emerald-900/40 text-[10px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 w-max">
+                            <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold px-2 py-0.5 rounded-full w-max">
                               <span>🎉 Complete!</span>
                             </span>
                           ) : (
                             <div className="flex flex-col gap-0.5">
                               {drv.reward.trips_remaining <= 5 ? (
-                                <span className="bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-[10.5px] font-black px-2 py-0.5 rounded-lg w-max animate-pulse">
+                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 text-[10.5px] font-bold px-2 py-0.5 rounded-full w-max animate-pulse">
                                   {drv.reward.trips_remaining} left
                                 </span>
                               ) : drv.reward.trips_remaining <= 20 ? (
-                                <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 text-[10.5px] font-black px-2 py-0.5 rounded-lg w-max">
+                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 text-[10.5px] font-bold px-2 py-0.5 rounded-full w-max">
                                   {drv.reward.trips_remaining} left
                                 </span>
                               ) : (
-                                <span className="bg-zinc-150 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border border-transparent text-[10.5px] font-bold px-2 py-0.5 rounded-lg w-max">
+                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-350 border border-transparent text-[10.5px] font-bold px-2 py-0.5 rounded-full w-max">
                                   {drv.reward.trips_remaining} left
                                 </span>
                               )}
@@ -1319,7 +1319,7 @@ ${cardsHTML}
                                         showToast("error", "Milestone payout approval failed.");
                                       }
                                     }}
-                                    className="interactive-button px-2 py-0.5 bg-[#06C167] hover:bg-[#05a858] text-white text-[9px] font-black rounded flex items-center justify-center w-max uppercase tracking-wider"
+                                    className="interactive-button px-2 py-0.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[9px] font-bold rounded-full flex items-center justify-center w-max uppercase tracking-wider"
                                   >
                                     Done F10
                                   </button>
@@ -1334,7 +1334,7 @@ ${cardsHTML}
                                         showToast("error", "Milestone payout approval failed.");
                                       }
                                     }}
-                                    className="interactive-button px-2 py-0.5 bg-[#06C167] hover:bg-[#05a858] text-white text-[9px] font-black rounded flex items-center justify-center w-max uppercase tracking-wider"
+                                    className="interactive-button px-2 py-0.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[9px] font-bold rounded-full flex items-center justify-center w-max uppercase tracking-wider"
                                   >
                                     Done F50
                                   </button>
@@ -1360,7 +1360,7 @@ ${cardsHTML}
                                   showToast("error", "Failed approving contact changes.");
                                 }
                               }}
-                              className="interactive-button w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 dark:text-emerald-300 flex items-center justify-center cursor-pointer"
+                              className="interactive-button w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 dark:text-emerald-300 flex items-center justify-center cursor-pointer"
                               title="Approve Contact Change"
                             >
                               <Check size={14} className="stroke-[2.5]" />
@@ -1371,7 +1371,7 @@ ${cardsHTML}
                           {drv.reward && drv.reward.active && (
                             <button
                               onClick={() => setResetConfirmationDriver(drv)}
-                              className="interactive-button w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 flex items-center justify-center cursor-pointer"
+                              className="interactive-button w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 flex items-center justify-center cursor-pointer"
                               title="Reset Reward tracking"
                             >
                               <RefreshCw size={14} className="stroke-[2.5]" />
@@ -1381,7 +1381,7 @@ ${cardsHTML}
                           {/* Edit Details */}
                           <button
                             onClick={() => setEditingDriver(drv)}
-                            className="interactive-button w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-350 flex items-center justify-center cursor-pointer"
+                            className="interactive-button w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-350 flex items-center justify-center cursor-pointer"
                             title="Edit Details"
                           >
                             <Edit2 size={14} className="stroke-[2.5]" />
@@ -1390,7 +1390,7 @@ ${cardsHTML}
                           {/* Delete Details */}
                           <button
                             onClick={() => setDeletingDriver(drv)}
-                            className={`interactive-button w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer ${
+                            className={`interactive-button w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
                               drv.deleted 
                                 ? 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-350 hover:bg-red-100' 
                                 : 'bg-zinc-100 hover:bg-red-50 hover:text-red-700 dark:bg-zinc-800 dark:hover:bg-red-950/20 dark:text-zinc-300'
@@ -1411,7 +1411,7 @@ ${cardsHTML}
                                   showToast("error", "Failed restoring driver.");
                                 }
                               }}
-                              className="interactive-button px-2.5 py-1 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white rounded-lg text-[10px] font-bold cursor-pointer"
+                              className="interactive-button px-2.5 py-1 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white rounded-full text-[10px] font-bold cursor-pointer"
                               title="Restore Driver"
                             >
                               Restore
@@ -1558,7 +1558,7 @@ ${cardsHTML}
       <div className="fixed bottom-0 left-0 right-0 w-full md:bottom-6 md:left-1/2 md:transform md:-translate-x-1/2 md:right-auto md:max-w-max bg-zinc-900/95 dark:bg-zinc-950/95 text-white px-4 py-3.5 pb-6 md:pb-4 md:px-6 rounded-t-2xl md:rounded-2xl shadow-2xl border-t md:border border-zinc-800 dark:border-zinc-700 flex flex-col md:flex-row md:items-center gap-3.5 md:gap-5 z-40 animate-slide-up select-none">
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#06C167] animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-white dark:bg-black animate-pulse"></span>
             <span className="text-xs font-black uppercase tracking-wider font-mono">
               {selectedIds.size} {selectedIds.size === 1 ? 'Driver' : 'Drivers'} Selected
             </span>
@@ -1751,7 +1751,7 @@ ${cardsHTML}
                               setShowStatusDropdown(false);
                             }}
                             className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold ${
-                              filterMode === 'status_active' ? 'text-[#06C167] bg-emerald-50/10' : 'text-black dark:text-white'
+                              filterMode === 'status_active' ? 'text-black dark:text-white bg-zinc-100 dark:bg-zinc-800' : 'text-black dark:text-white'
                             }`}
                           >
                             <div className="flex items-center gap-2">
@@ -1828,7 +1828,7 @@ ${cardsHTML}
                   placeholder="Search driver by name, phone..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl p-3 pl-9.5 text-xs font-semibold focus:ring-1 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white"
+                  className="w-full text-input rounded-none pl-10 text-xs font-medium focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
                 />
               </div>
 
@@ -1872,16 +1872,16 @@ ${cardsHTML}
                                   {drv.name || "UNNAMED DRIVER"}
                                 </h3>
                                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded flex items-center gap-1 select-none ${
-                                    drv.status === 'Active' ? 'bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400' :
-                                    drv.status === 'Applied' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-550 dark:text-blue-400' :
-                                    drv.status === 'Waitlisted' ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-550 dark:text-amber-400' :
-                                    'bg-red-50 dark:bg-red-950/30 text-red-550 dark:text-red-400'
+                                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 select-none ${
+                                    drv.status === 'Active' ? 'bg-black dark:bg-white text-white dark:text-black' :
+                                    drv.status === 'Applied' ? 'bg-zinc-150 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200' :
+                                    drv.status === 'Waitlisted' ? 'bg-zinc-250 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-200' :
+                                    'bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400'
                                   }`}>
                                     <span className={`w-1 h-1 rounded-full ${
-                                      drv.status === 'Active' ? 'bg-[#06C167] animate-pulse' :
-                                      drv.status === 'Applied' ? 'bg-blue-500' :
-                                      drv.status === 'Waitlisted' ? 'bg-amber-500' :
+                                      drv.status === 'Active' ? 'bg-white dark:bg-black animate-pulse' :
+                                      drv.status === 'Applied' ? 'bg-zinc-400' :
+                                      drv.status === 'Waitlisted' ? 'bg-zinc-500' :
                                       'bg-red-500'
                                     }`}></span>
                                     {drv.status || 'Active'}
@@ -1934,26 +1934,26 @@ ${cardsHTML}
                                       setRewardTrackingDriver(drv);
                                       setRewardCycleInput(52);
                                     }}
-                                    className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10.5px] font-bold rounded-lg flex items-center gap-1 shadow-xs cursor-pointer select-none w-max"
+                                    className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10.5px] font-bold rounded-full flex items-center gap-1 shadow-xs cursor-pointer select-none w-max"
                                   >
                                     <span>▶ Start Reward</span>
                                   </button>
                                 ) : drv.reward.completed ? (
-                                  <span className="bg-emerald-50 dark:bg-emerald-950/30 text-[#06C167] border border-emerald-200 dark:border-emerald-900/40 text-[10.5px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 w-max select-none">
-                                    <span>🎉 Complete!</span>
+                                  <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-[10.5px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 w-max select-none">
+                                    <span>🎉 Active</span>
                                   </span>
                                 ) : (
                                   <div className="flex flex-col gap-0.5 select-none">
                                     {drv.reward.trips_remaining <= 5 ? (
-                                      <span className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-[11px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 w-max animate-pulse">
+                                      <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-max">
                                         <span>⚡ {drv.reward.trips_remaining} left</span>
                                       </span>
                                     ) : drv.reward.trips_remaining <= 20 ? (
-                                      <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 text-[11px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 w-max">
+                                      <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-max">
                                         <span>🔥 {drv.reward.trips_remaining} left</span>
                                       </span>
                                     ) : (
-                                      <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-transparent text-[11px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 w-max">
+                                      <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-transparent text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-max">
                                         <span>⏳ {drv.reward.trips_remaining} left</span>
                                       </span>
                                     )}
@@ -1987,7 +1987,7 @@ ${cardsHTML}
                                               showToast("error", "Milestone payout approval failed.");
                                             }
                                           }}
-                                          className="interactive-button px-2 py-0.5 bg-[#06C167] hover:bg-[#05a858] text-white text-[9.5px] font-black rounded shadow-xs cursor-pointer flex items-center justify-center w-max uppercase tracking-wider"
+                                          className="interactive-button px-2 py-0.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[9.5px] font-black rounded-full shadow-xs cursor-pointer flex items-center justify-center w-max uppercase tracking-wider"
                                         >
                                           <span>Done F10</span>
                                         </button>
@@ -2129,6 +2129,7 @@ ${cardsHTML}
         const cleanPlate = dailyPlate.trim().toUpperCase();
         setPlateCheckLoading(true);
         try {
+          // ── PLATE OWNERSHIP CHECK ──
           await claimPlateOwnership(cleanPlate, myUid, myName);
           const newLog: DailyLog = {
             id: `log_${Date.now()}`,
@@ -2417,8 +2418,8 @@ ${cardsHTML}
                               {log.vehiclePlate}
                             </span>
                             {matchingPayout ? (
-                              <span className="text-[9px] bg-emerald-50 dark:bg-emerald-950/30 text-[#06C167] border border-emerald-200 dark:border-emerald-900/50 px-1.5 py-0.5 rounded font-black flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 bg-[#06C167] rounded-full"></span>
+                              <span className="text-[9px] bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full"></span>
                                 Payout Done BDT {matchingPayout.amount.toLocaleString()}
                               </span>
                             ) : (
@@ -2871,7 +2872,7 @@ ${cardsHTML}
 
                 <div className="flex items-center gap-2 mt-2 flex-wrap select-none text-[12px] font-bold">
                   <span className={`px-2 py-0.5 rounded flex items-center gap-1.5 uppercase select-none ${
-                    drv.status === 'Active' ? 'bg-[#e6f9f0] dark:bg-emerald-950/30 text-[#06C167] dark:text-emerald-400' :
+                    drv.status === 'Active' ? 'bg-black dark:bg-white text-white dark:text-black' :
                     drv.status === 'Applied' ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-550 dark:text-blue-400' :
                     drv.status === 'Waitlisted' ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-550 dark:text-amber-400' :
                     'bg-red-50 dark:bg-red-950/30 text-red-550 dark:text-red-400'
@@ -2999,7 +3000,7 @@ ${cardsHTML}
                             <span className="font-mono text-xs font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-zinc-700 dark:text-zinc-300">
                               {assignedVehicle.plate}
                             </span>
-                            <span className="text-[10.5px] text-[#06C167] font-black uppercase">Active</span>
+                            <span className="text-[10.5px] text-zinc-950 dark:text-white font-bold uppercase">Active</span>
                           </div>
                         </div>
                       </div>
@@ -3047,7 +3048,7 @@ ${cardsHTML}
                     <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
                       <h3 className="text-[17px] font-extrabold text-black dark:text-white tracking-tight leading-none">Active Reward Tracking</h3>
                       {drv.reward.completed ? (
-                        <span className="bg-emerald-50 dark:bg-emerald-950/30 text-[#06C167] border border-emerald-200 dark:border-emerald-900/40 text-[11px] font-black px-2.5 py-0.5 rounded-lg">
+                        <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-855 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                           🎉 Cycle Complete
                         </span>
                       ) : (
@@ -3070,7 +3071,7 @@ ${cardsHTML}
                           </div>
                           <div className="w-full h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800">
                             <div 
-                              className="h-full bg-[#06C167] rounded-full transition-all duration-500 shadow-sm"
+                              className="h-full bg-black dark:bg-white rounded-full transition-all duration-500 shadow-sm"
                               style={{ width: `${percent}%` }}
                             ></div>
                           </div>
@@ -3191,7 +3192,7 @@ ${cardsHTML}
                               {!hasF10 ? (
                                 <span className="text-zinc-450 dark:text-zinc-500 font-bold">Locked ({10 - currentCycleTrips} trips left)</span>
                               ) : drv.reward.f10_done ? (
-                                <span className="text-[#06C167] font-black flex items-center gap-1">✓ Paid</span>
+                                <span className="text-zinc-950 dark:text-white font-bold flex items-center gap-1">✓ Paid</span>
                               ) : (
                                 <button 
                                   onClick={async () => {
@@ -3202,7 +3203,7 @@ ${cardsHTML}
                                       showToast("error", "Milestone approval failed.");
                                     }
                                   }}
-                                  className="bg-[#06C167] text-white font-bold p-1.5 px-3 rounded-lg hover:opacity-85 transition interactive-button"
+                                  className="button-primary rounded-full p-1.5 px-4 text-xs font-medium cursor-pointer shadow-xs"
                                 >
                                   Approve Payout
                                 </button>
@@ -3220,7 +3221,7 @@ ${cardsHTML}
                               {!hasF50 ? (
                                 <span className="text-zinc-450 dark:text-zinc-500 font-bold">Locked ({50 - currentCycleTrips} trips left)</span>
                               ) : drv.reward.f50_done ? (
-                                <span className="text-[#06C167] font-black flex items-center gap-1">✓ Paid</span>
+                                <span className="text-zinc-950 dark:text-white font-bold flex items-center gap-1">✓ Paid</span>
                               ) : (
                                 <button 
                                   onClick={async () => {
@@ -3231,7 +3232,7 @@ ${cardsHTML}
                                       showToast("error", "Milestone approval failed.");
                                     }
                                   }}
-                                  className="bg-[#06C167] text-white font-bold p-1.5 px-3 rounded-lg hover:opacity-85 transition interactive-button"
+                                  className="button-primary rounded-full p-1.5 px-4 text-xs font-medium cursor-pointer shadow-xs"
                                 >
                                   Approve Payout
                                 </button>
@@ -3316,7 +3317,7 @@ ${cardsHTML}
           >
             <div className="flex justify-between items-center border-b border-zinc-100 pb-3.5">
               <h3 className="font-bold text-base text-black flex items-center gap-2">
-                <Edit2 size={16} className="text-[#06C167]" />
+                <Edit2 size={16} className="text-black dark:text-white" />
                 <span>Edit Details</span>
               </h3>
               <button
@@ -3408,7 +3409,7 @@ ${cardsHTML}
                     showToast("error", "Error saving details.");
                   }
                 }}
-                className="px-4 py-2 bg-[#06C167] text-white text-xs font-bold rounded-lg cursor-pointer transition select-none"
+                className="px-4 py-2 button-primary rounded-full text-xs font-medium cursor-pointer transition select-none"
               >
                 Save
               </button>
@@ -3702,7 +3703,7 @@ ${cardsHTML}
             className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl max-w-sm w-full p-5 space-y-4 animate-scale-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3 text-[#06C167]">
+            <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3 text-black dark:text-white">
               <span className="text-lg">🏆</span>
               <h3 className="font-bold text-base text-black dark:text-white">Start Bulk Reward Tracking</h3>
             </div>
@@ -3743,7 +3744,7 @@ ${cardsHTML}
                     showToast("error", "Bulk start failed.");
                   }
                 }}
-                className="flex-1 py-2.5 bg-[#06C167] hover:bg-[#05a858] text-white font-extrabold rounded-xl transition shadow-sm cursor-pointer"
+                className="flex-1 py-2.5 button-primary rounded-full transition shadow-sm cursor-pointer font-bold text-xs"
               >
                 Start Tracking
               </button>
@@ -3755,7 +3756,7 @@ ${cardsHTML}
       {/* Toast Alert Banner */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-zinc-950 text-white rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 border border-zinc-800 animate-slide-up">
-          <CheckCircle size={14} className="text-[#06C167]" />
+          <CheckCircle size={14} className="text-white dark:text-black" />
           <span>{toast.message}</span>
         </div>
       )}

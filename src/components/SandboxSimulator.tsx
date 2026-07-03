@@ -166,13 +166,13 @@ export default function SandboxSimulator() {
 
         {/* Address bar URL bar */}
         <div className="bg-zinc-900/40 p-2 border-b border-zinc-900 flex items-center gap-2">
-          <div className="bg-zinc-900 border border-zinc-800 text-[var(--text-muted)] font-mono text-[10.5px] rounded px-3 py-1 flex-1 flex items-center gap-2">
+          <div className="bg-zinc-900 border border-zinc-800 text-[var(--text-muted)] font-mono text-[10.5px] rounded-none px-3 py-1 flex-1 flex items-center gap-2">
             <span className="text-[var(--brand-primary)] select-none">🔐</span>
             <span>https://supplier.uber.com/orgs/689c1d-bd22/drivers</span>
           </div>
           <button
             onClick={simulateTripIncreasees}
-            className="p-1 px-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded transition flex items-center gap-1.5 cursor-pointer"
+            className="p-1 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-full transition flex items-center gap-1.5 cursor-pointer font-medium"
             title="Increase trips for all"
           >
             <RefreshCw size={11} />
@@ -194,14 +194,14 @@ export default function SandboxSimulator() {
 
             <button
               onClick={handleRandomizeContacts}
-              className="text-[11px] font-bold uppercase tracking-wider bg-[var(--brand-primary)] text-black px-3 py-1.5 rounded hover:bg-emerald-400 transition cursor-pointer"
+              className="text-[11px] button-primary rounded-full px-3.5 py-1.5 cursor-pointer transition font-medium border border-transparent"
             >
               Simulate Updates (Changes)
             </button>
           </div>
 
           {/* Table Container */}
-          <div className="border border-zinc-800 rounded overflow-hidden divide-y divide-zinc-900 bg-zinc-900/20">
+          <div className="border border-zinc-800 rounded-xl overflow-hidden divide-y divide-zinc-900 bg-zinc-900/20">
             {drivers.map((drv, idx) => (
               <div
                 key={drv.uuid}
@@ -249,7 +249,7 @@ export default function SandboxSimulator() {
 
                 <button
                   onClick={() => handleEditClick(idx)}
-                  className="p-1 px-2.5 bg-zinc-800 hover:bg-zinc-700 hover:text-[var(--bg-base)] text-[var(--text-muted)] rounded transition text-[11px] cursor-pointer"
+                  className="p-1 px-3 bg-zinc-800 hover:bg-zinc-700 hover:text-[var(--bg-base)] text-[var(--text-muted)] rounded-full transition text-[11px] cursor-pointer font-medium"
                 >
                   Edit
                 </button>
@@ -259,7 +259,7 @@ export default function SandboxSimulator() {
 
           {/* Form Editor Modal/Overlay when active */}
           {editingIndex !== null && (
-            <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-lg space-y-3">
+            <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl space-y-3">
               <h4 className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
                 <PenTool size={12} className="text-[var(--brand-primary)]" />
                 <span>Quick Update: {drivers[editingIndex].name}</span>
@@ -278,7 +278,7 @@ export default function SandboxSimulator() {
                         email: e.target.value,
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -294,7 +294,7 @@ export default function SandboxSimulator() {
                         phone: e.target.value,
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -310,7 +310,7 @@ export default function SandboxSimulator() {
                         trips: Number(e.target.value),
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -325,7 +325,7 @@ export default function SandboxSimulator() {
                         status: e.target.value as any,
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)]"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)]"
                   >
                     <option value="Active">Active</option>
                     <option value="Applied">Applied</option>
@@ -337,13 +337,13 @@ export default function SandboxSimulator() {
               <div className="flex items-center gap-2 pt-1.5 justify-end">
                 <button
                   onClick={() => setEditingIndex(null)}
-                  className="px-3 py-1 bg-zinc-800 text-[var(--text-muted)] font-semibold text-xs rounded hover:bg-zinc-700 hover:text-[var(--bg-base)] transition cursor-pointer"
+                  className="px-3.5 py-1 bg-zinc-800 text-[var(--text-muted)] font-medium text-xs rounded-full hover:bg-zinc-700 hover:text-[var(--bg-base)] transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-3 py-1 bg-[var(--brand-primary)] text-black font-bold text-xs rounded hover:bg-emerald-400 transition cursor-pointer"
+                  className="px-3.5 py-1 button-primary rounded-full transition cursor-pointer text-xs font-medium border border-transparent"
                 >
                   Apply Change
                 </button>
@@ -355,7 +355,7 @@ export default function SandboxSimulator() {
 
       {/* 2. LIVE GENERATED RAW CODE PREVIEW */}
       <div className="lg:col-span-12 xl:col-span-5 flex flex-col space-y-6">
-        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg p-6 space-y-4 shadow-sm flex-1 flex flex-col justify-between">
+        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-xl p-6 space-y-4 shadow-sm flex-1 flex flex-col justify-between">
           <div className="space-y-3">
             <h3 className="text-[var(--text-base)] font-bold text-sm flex items-center gap-2">
               <Sparkles size={16} className="text-[var(--brand-primary)]" />
@@ -368,7 +368,7 @@ export default function SandboxSimulator() {
               সিমুলেট করুন!
             </p>
 
-            <div className="relative bg-zinc-950 border border-zinc-800 p-4 rounded overflow-auto h-72 text-zinc-100">
+            <div className="relative bg-zinc-950 border border-zinc-800 p-4 rounded-xl overflow-auto h-72 text-zinc-100">
               <pre className="font-mono text-[10px] leading-relaxed text-[var(--brand-primary)] whitespace-pre">
                 {currentGeneratedHtml}
               </pre>
@@ -378,7 +378,7 @@ export default function SandboxSimulator() {
           <div className="flex items-center gap-2.5 pt-4 border-t border-zinc-100">
             <button
               onClick={handleCopy}
-              className="w-full py-2.5 px-4 bg-black hover:bg-white/10 text-white font-bold text-xs rounded transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 px-4 button-primary rounded-full cursor-pointer transition flex items-center justify-center gap-2 border border-transparent text-xs font-medium"
             >
               {copied ? (
                 <>

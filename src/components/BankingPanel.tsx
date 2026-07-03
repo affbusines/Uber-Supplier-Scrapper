@@ -299,20 +299,19 @@ export default function BankingPanel() {
       {/* Toast Alert popup */}
       {toast && (
         <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-xl shadow-xl flex items-center gap-2 text-xs font-bold border animate-slide-up ${
-          toast.type === "success" ? "bg-emerald-50 dark:bg-emerald-950/40 text-[#06C167] border-emerald-200 dark:border-emerald-900/50" :
+          toast.type === "success" ? "bg-zinc-950 dark:bg-white text-white dark:text-black border-zinc-900 dark:border-zinc-100" :
           toast.type === "error" ? "bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-400 border-red-200 dark:border-red-900/50" :
           "bg-blue-50 dark:bg-blue-950/40 text-blue-650 dark:text-blue-400 border-blue-200 dark:border-blue-900/50"
         }`}>
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+          {toast.type === "success" ? <CheckCircle size={16} className="text-white dark:text-black" /> : <AlertCircle size={16} />}
           <span>{toast.message}</span>
         </div>
       )}
 
       {/* 2-Column layout: Left: Uber Wallet replica, Right: Scraper Options */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        
         {/* LEFT COLUMN: Uber Wallet Replica */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#121212] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-md space-y-6">
+        <div className="lg:col-span-3 bg-white dark:bg-[#121212] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-md space-y-6">
           
           {/* Card Header matching screenshot */}
           <div className="flex items-center justify-between">
@@ -321,18 +320,14 @@ export default function BankingPanel() {
             </button>
             <h2 className="text-lg font-black text-black dark:text-white tracking-tight">Uber Wallet</h2>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                <img 
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" 
-                  alt="avatar" 
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-8 h-8 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-extrabold text-xs uppercase select-none border border-zinc-250 dark:border-zinc-700">
+                {partnerName.substring(0, 2)}
               </div>
             </div>
           </div>
 
           {/* Balance display matching screenshot */}
-          <div className="bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-150/50 dark:border-zinc-800/40 rounded-2xl p-6 space-y-4">
+          <div className="bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-150/50 dark:border-zinc-800/40 rounded-xl p-6 space-y-4">
             <div className="space-y-1">
               <span className="text-xs font-bold text-zinc-450 uppercase tracking-widest block">Balance</span>
               <span className="text-3xl font-black text-black dark:text-white tracking-tight block">
@@ -406,15 +401,15 @@ export default function BankingPanel() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Sync Trigger Card */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs space-y-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-xs space-y-4">
             <h3 className="text-sm font-extrabold text-black dark:text-white tracking-tight border-b border-zinc-100 dark:border-zinc-800 pb-2">
               Sync Controls
-            </h3>
+             </h3>
             
             <button
               onClick={runPayoutsSync}
               disabled={syncing}
-              className="w-full py-2.5 bg-black hover:bg-zinc-850 dark:bg-white dark:hover:bg-zinc-150 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-400 dark:text-black text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-[0.97]"
+              className="w-full py-2.5 button-primary disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-xs font-extrabold rounded-full transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-[0.97] border border-transparent"
             >
               <RefreshCw size={14} className={`stroke-[2.5] ${syncing ? "animate-spin" : ""}`} />
               <span>{syncing ? "Scraping Uber Portal..." : "Scrape Uber Wallet"}</span>
@@ -422,7 +417,7 @@ export default function BankingPanel() {
 
             <button
               onClick={() => setShowPasteArea(!showPasteArea)}
-              className="w-full py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2.5 button-secondary text-xs font-extrabold rounded-full transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <UploadCloud size={14} />
               <span>Paste Payout HTML Source</span>
@@ -430,7 +425,7 @@ export default function BankingPanel() {
           </div>
 
           {/* Sync execution log output */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-3xl p-5 shadow-xs flex flex-col min-h-[250px]">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-xs flex flex-col min-h-[250px]">
             <h3 className="text-sm font-extrabold text-black dark:text-white tracking-tight border-b border-zinc-100 dark:border-zinc-800 pb-2 mb-3">
               Sync Diagnostics
             </h3>
@@ -442,18 +437,18 @@ export default function BankingPanel() {
                   rows={6}
                   value={htmlPaste}
                   onChange={(e) => setHtmlPaste(e.target.value)}
-                  className="w-full text-[11px] font-mono bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-black dark:text-white focus:ring-1 focus:ring-black outline-none resize-none flex-1"
+                  className="w-full text-input rounded-none p-3 font-mono text-[11px] outline-none resize-none flex-1"
                 />
                 <div className="flex justify-end gap-2 text-xs font-bold">
                   <button
                     onClick={() => setShowPasteArea(false)}
-                    className="px-4 py-2 border border-zinc-200 dark:border-zinc-750 text-zinc-500 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+                    className="px-4 py-2 button-secondary rounded-full cursor-pointer transition text-xs font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={parseRawHtmlPayout}
-                    className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-xl hover:opacity-85 transition active:scale-[0.97] cursor-pointer"
+                    className="px-4 py-2 button-primary rounded-full cursor-pointer transition text-xs font-medium border border-transparent"
                   >
                     Parse Payouts
                   </button>
@@ -465,7 +460,7 @@ export default function BankingPanel() {
                   <span className="text-zinc-400 dark:text-zinc-500 italic block">No diagnostics run yet. Click 'Scrape Uber Wallet' to trace.</span>
                 ) : (
                   syncLogs.map((log, idx) => (
-                    <div key={idx} className={log.startsWith("✓") ? "text-[#06C167] font-bold" : log.startsWith("❌") ? "text-red-500 font-bold" : ""}>
+                    <div key={idx} className={log.startsWith("✓") ? "text-black dark:text-white font-bold" : log.startsWith("❌") ? "text-red-500 font-bold" : ""}>
                       &gt; {log}
                     </div>
                   ))

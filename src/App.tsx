@@ -303,17 +303,17 @@ export default function App() {
       <div className="h-full flex flex-col justify-between bg-white dark:bg-zinc-950 text-black dark:text-zinc-100 font-sans">
         {/* App Branding Block */}
         <div className="p-5 pt-6 pb-4 flex items-center gap-3 shrink-0 select-none border-b border-zinc-150 dark:border-zinc-900">
-          <div className="w-8 h-8 rounded-lg bg-[#06C167] text-white flex items-center justify-center font-black shadow-sm shrink-0">
-            <RefreshCw size={15} />
+          <div className="w-8 h-8 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-black shadow-sm shrink-0">
+            <RefreshCw size={14} />
           </div>
-          <span className="font-black text-[15.5px] tracking-tight text-black dark:text-white">
+          <span className="font-display font-extrabold text-[17px] tracking-tight text-black dark:text-white">
             Uber Fleet Sync
           </span>
         </div>
 
         {/* Profile Info Block */}
         <div className="p-6 pt-5 pb-6 border-b border-zinc-100 dark:border-zinc-900 flex items-center gap-3 bg-zinc-50/50 dark:bg-zinc-900/20 shrink-0">
-          <div className="w-11 h-11 rounded-full bg-[#06C167] text-white flex items-center justify-center font-black text-sm uppercase shrink-0">
+          <div className="w-11 h-11 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-sm uppercase shrink-0">
             {displayName ? displayName.charAt(0) : user?.email?.charAt(0) || "M"}
           </div>
           <div className="min-w-0">
@@ -325,7 +325,7 @@ export default function App() {
         </div>
 
         {/* Navigation links list */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5 no-scrollbar">
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5 no-scrollbar">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
@@ -336,13 +336,16 @@ export default function App() {
                   setActiveTab(item.id);
                   if (isDrawer) setMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-4 px-4 py-2.5 rounded-lg text-left text-[14.5px] font-bold transition-colors interactive-button ${
+                className={`w-full flex items-center gap-4 px-4 py-2.5 rounded-md text-left text-[14px] font-medium transition-colors interactive-button relative ${
                   active 
-                    ? 'bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white' 
-                    : 'text-zinc-800 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
+                    ? 'bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white pl-6' 
+                    : 'text-zinc-750 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
                 }`}
               >
-                <Icon size={17} className={active ? 'text-black dark:text-white' : 'text-zinc-500 dark:text-zinc-400'} />
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-black dark:bg-white rounded-r" />
+                )}
+                <Icon size={16} className={active ? 'text-black dark:text-white' : 'text-zinc-500 dark:text-zinc-450'} />
                 <span>{item.label}</span>
               </button>
             );
@@ -353,7 +356,7 @@ export default function App() {
         <div className="p-4 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-900/30 shrink-0 flex items-center justify-between">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 transition"
+            className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-400 transition"
             title="Toggle Theme"
           >
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
@@ -361,7 +364,7 @@ export default function App() {
 
           <button
             onClick={logOutUser}
-            className="flex items-center gap-1.5 p-2 px-3 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 transition text-xs font-bold interactive-button"
+            className="flex items-center gap-1.5 p-2 px-3.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 transition text-xs font-bold interactive-button border border-transparent hover:border-red-200 dark:hover:border-transparent"
           >
             <LogOut size={13} />
             <span>Log Out</span>
@@ -384,14 +387,14 @@ export default function App() {
         
         {/* Sync Age Warning Banner */}
         {hoursSince >= reminderHours && activeTab !== 'import' && (
-          <div className="bg-amber-50 border-b border-amber-200 text-amber-950 p-2.5 px-6 text-xs font-semibold flex justify-between items-center z-10 shrink-0">
+          <div className="bg-amber-50 dark:bg-amber-950/25 border-b border-amber-200/60 dark:border-amber-900/40 text-amber-900 dark:text-amber-300 p-2.5 px-6 text-xs font-semibold flex justify-between items-center z-10 shrink-0 animate-enter">
             <div className="flex items-center gap-2">
-              <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+              <AlertTriangle size={15} className="text-amber-600 dark:text-amber-500 shrink-0" />
               <span>Database Sync Status: Data is {Math.floor(hoursSince / 24)} days old. Please sync from portal.</span>
             </div>
             <button 
               onClick={() => setActiveTab('import')}
-              className="bg-amber-950 text-white rounded p-1.5 px-3.5 hover:opacity-85 text-[11px] interactive-button font-bold"
+              className="bg-amber-900 dark:bg-amber-400 text-white dark:text-black rounded-full p-1.5 px-4 hover:opacity-90 text-[11px] interactive-button font-bold"
             >
               Sync Now
             </button>
@@ -410,15 +413,13 @@ export default function App() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 15, scale: 0.95 }}
               transition={{ type: "spring", bounce: 0, duration: 0.35 }}
-              className={`fixed bottom-6 right-6 z-50 p-4 rounded-xl shadow-lg border flex items-center gap-3 ${
-                toast.type === 'success' 
-                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
-                  : toast.type === 'error'
-                  ? 'bg-red-50 text-red-900 border-red-200'
-                  : 'bg-zinc-950 text-white border-zinc-800'
-              }`}
+              className="fixed bottom-6 right-6 z-50 p-3.5 px-5 bg-white dark:bg-zinc-900 text-black dark:text-white border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl flex items-center gap-3"
             >
-              <span className="text-base shrink-0 font-bold">
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                toast.type === 'success' ? 'bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white' :
+                toast.type === 'error' ? 'bg-red-50 text-red-650 dark:bg-red-950/45 dark:text-red-400' :
+                'bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white'
+              }`}>
                 {toast.type === 'success' ? '✓' : toast.type === 'error' ? '✕' : 'ℹ'}
               </span>
               <p className="text-sm font-semibold tracking-tight">{toast.message}</p>

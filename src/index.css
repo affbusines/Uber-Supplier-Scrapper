@@ -22,38 +22,38 @@
 
 @layer base {
   :root {
-    /* Uber-like light/clean theme tokens */
+    /* Uber light theme tokens */
     --bg-base: #ffffff;
-    --bg-surface: #f7f7f7;
-    --bg-subtle: #eeeeee;
+    --bg-surface: #ffffff;
+    --bg-subtle: #efefef;
 
     --border-base: #e2e2e2;
 
     --text-strong: #000000;
-    --text-base: #333333;
-    --text-muted: #666666;
+    --text-base: #5e5e5e;
+    --text-muted: #afafaf;
 
-    --brand-primary: #06C167; /* Uber green */
-    --brand-primary-subtle: #e6f9f0;
+    --brand-primary: #000000; /* Pure Ink Black */
+    --brand-primary-subtle: #efefef;
 
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   }
 
   .dark {
-    /* Dark Mode Tokens */
-    --bg-base: #0f0f0f;
-    --bg-surface: #1a1a1a;
-    --bg-subtle: #2d2d2d;
+    /* Uber dark theme tokens */
+    --bg-base: #000000;
+    --bg-surface: #0f0f0f;
+    --bg-subtle: #1a1a1a;
 
-    --border-base: #2d2d2d;
+    --border-base: #282828;
 
     --text-strong: #ffffff;
-    --text-base: #dcdcdc;
-    --text-muted: #999999;
+    --text-base: #afafaf;
+    --text-muted: #5e5e5e;
 
-    --brand-primary: #06C167;
-    --brand-primary-subtle: #123e2a;
+    --brand-primary: #ffffff; /* Pure Ink White */
+    --brand-primary-subtle: #282828;
   }
 
   html {
@@ -71,6 +71,140 @@
   }
 }
 
+/* Uber Design System Primitives */
+.font-display {
+  font-family: 'UberMove', 'Inter', 'Geist Variable', system-ui, sans-serif;
+  font-weight: 700;
+  font-feature-settings: "ss01" on;
+  letter-spacing: -0.02em;
+}
+
+.font-text {
+  font-family: 'UberMoveText', 'Inter', 'Geist Variable', system-ui, sans-serif;
+}
+
+/* Buttons */
+.button-primary {
+  background-color: var(--brand-primary);
+  color: var(--bg-base);
+  font-family: 'UberMoveText', 'Inter', 'Geist Variable', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  border-radius: 999px;
+  padding: 10px 20px;
+  transition: transform 160ms var(--ease-out), background-color 200ms ease, opacity 200ms ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  outline: none;
+  user-select: none;
+}
+.button-primary:active {
+  transform: scale(0.97);
+}
+
+.button-secondary {
+  background-color: var(--bg-base);
+  color: var(--text-strong);
+  font-family: 'UberMoveText', 'Inter', 'Geist Variable', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  border-radius: 999px;
+  padding: 10px 20px;
+  transition: transform 160ms var(--ease-out), background-color 200ms ease, opacity 200ms ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-base);
+  outline: none;
+  user-select: none;
+}
+.button-secondary:active {
+  transform: scale(0.97);
+}
+.button-secondary:hover {
+  background-color: var(--bg-subtle);
+}
+
+.button-subtle {
+  background-color: var(--bg-subtle);
+  color: var(--text-strong);
+  font-family: 'UberMoveText', 'Inter', 'Geist Variable', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  border-radius: 999px;
+  padding: 10px 18px;
+  transition: transform 160ms var(--ease-out), background-color 200ms ease, opacity 200ms ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  outline: none;
+  user-select: none;
+}
+.button-subtle:active {
+  transform: scale(0.97);
+}
+.button-subtle:hover {
+  filter: brightness(0.96);
+}
+
+.button-floating {
+  background-color: var(--bg-base);
+  color: var(--text-strong);
+  border-radius: 999px;
+  padding: 10px 16px;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 2px 8px 0px;
+  transition: transform 160ms var(--ease-out);
+  cursor: pointer;
+  user-select: none;
+}
+.button-floating:active {
+  transform: scale(0.97);
+}
+
+.button-large-rounded {
+  background-color: var(--brand-primary);
+  color: var(--bg-base);
+  font-family: 'UberMoveText', 'Inter', 'Geist Variable', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  border-radius: 16px;
+  padding: 14px 20px;
+  transition: transform 160ms var(--ease-out);
+  cursor: pointer;
+  border: none;
+  user-select: none;
+}
+.button-large-rounded:active {
+  transform: scale(0.97);
+}
+
+/* Form Input Primitives */
+.text-input {
+  background-color: var(--bg-subtle);
+  color: var(--text-strong);
+  font-family: 'UberMoveText', 'Inter', 'Geist Variable', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  border-radius: 0px !important;
+  padding: 14px;
+  border: 1px solid transparent;
+  outline: none;
+  transition: border-color 200ms ease;
+}
+.text-input:focus {
+  border-color: var(--text-strong);
+}
+
 /* Custom Scrollbars to keep it clean */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -85,7 +219,7 @@
   transition: transform 140ms var(--ease-out), background-color 200ms ease, opacity 200ms ease;
 }
 .interactive-button:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 @keyframes fadeInSlide {

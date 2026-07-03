@@ -130,7 +130,7 @@ service cloud.firestore {
               <button
                 onClick={handleLogout}
                 id="btn-trigger-logout"
-                className="w-full sm:w-auto px-5 py-2 hover:bg-[var(--bg-surface)] border border-zinc-350 text-[var(--text-base)] font-bold text-xs rounded transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2 button-secondary rounded-full cursor-pointer transition text-xs font-medium"
               >
                 <LogOut size={13} />
                 <span>Log Out</span>
@@ -139,7 +139,7 @@ service cloud.firestore {
               <button
                 onClick={handleLogin}
                 id="btn-trigger-login"
-                className="w-full sm:w-auto px-6 py-2.5 bg-black hover:bg-white/10 text-white font-bold text-xs rounded transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 button-primary rounded-full cursor-pointer transition text-xs font-medium border border-transparent"
               >
                 <LogIn size={13} />
                 <span>Access Team Console</span>
@@ -152,7 +152,7 @@ service cloud.firestore {
       {/* 2. Sandbox fallbacks / database reset */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Run Mode Check */}
-        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-xl p-6 shadow-sm flex flex-col justify-between">
           <div>
             <h4 className="text-[var(--text-base)] font-bold text-sm mb-1">
               Central Sync Server Connection
@@ -161,8 +161,8 @@ service cloud.firestore {
               রিয়েল-টাইম ডাটা সিঙ্ক ইঞ্জিনের বর্তমান সংকেত ও কন্ডিশন।
             </p>
 
-            <div className="p-3.5 rounded border mb-4 space-y-2 text-xs bg-emerald-50/60 border-emerald-150">
-              <div className="flex items-center gap-2 font-bold text-emerald-800">
+            <div className="p-3.5 rounded-xl border mb-4 space-y-2 text-xs bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2 font-bold text-zinc-900 dark:text-zinc-100">
                 <span className="w-2.5 h-2.5 rounded-full bg-[var(--brand-primary)] animate-pulse shrink-0"></span>
                 <span>Active Browser Sandbox Engine is Online</span>
               </div>
@@ -183,7 +183,7 @@ service cloud.firestore {
               onClick={handleResetData}
               disabled={resetting}
               id="btn-reset-db"
-              className="px-4 py-2 hover:bg-red-50 text-red-600 border border-red-200 font-bold text-xs rounded transition shrink-0 cursor-pointer"
+              className="px-4 py-2 hover:bg-red-50 text-red-600 border border-red-200 font-medium text-xs rounded-full transition shrink-0 cursor-pointer"
             >
               {resetting ? "Resetting..." : "Reset Database"}
             </button>
@@ -191,7 +191,7 @@ service cloud.firestore {
         </div>
 
         {/* Firestore Rules Guideline */}
-        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-lg p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-[var(--bg-base)] border border-[var(--border-base)] rounded-xl p-6 shadow-sm flex flex-col justify-between">
           <div>
             <h4 className="text-[var(--text-base)] font-bold text-sm mb-1">
               Corporate Security Rules Configuration
@@ -205,7 +205,7 @@ service cloud.firestore {
               নিম্নের সিকিউরিটি গেট রুলস ডিফাইন করা আছে।
             </p>
 
-            <div className="bg-zinc-950 rounded p-3 text-zinc-100 text-[10.5px] font-mono whitespace-pre overflow-x-auto border border-zinc-800">
+            <div className="bg-zinc-950 rounded-xl p-3 text-zinc-100 text-[10.5px] font-mono whitespace-pre overflow-x-auto border border-zinc-800">
               {firestoreRulesSample}
             </div>
           </div>
@@ -213,7 +213,7 @@ service cloud.firestore {
           <div className="pt-4 border-t border-zinc-100 flex items-center justify-end">
             <button
               onClick={copyRules}
-              className="py-2 px-3 bg-[var(--bg-surface)] hover:bg-[var(--bg-subtle)] text-[var(--text-base)] rounded font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+              className="py-2 px-3 button-secondary rounded-full transition flex items-center gap-1.5 cursor-pointer text-xs font-medium"
             >
               {copiedRule ? (
                 <>

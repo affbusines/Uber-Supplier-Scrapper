@@ -245,7 +245,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
             <div>
               <h2 className="text-xl font-extrabold text-black dark:text-white tracking-tight flex items-center gap-2">
-                <SlidersHorizontal size={20} className="text-[#06C167]" />
+                <SlidersHorizontal size={20} className="text-black dark:text-white" />
                 <span>Visual Sync Diff Engine</span>
               </h2>
               <p className="text-xs text-zinc-500 mt-1">Review scraped data modifications before writing to Firebase database.</p>
@@ -254,14 +254,14 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => setPendingSyncDrivers(null)}
-                className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-black dark:text-white text-xs font-bold rounded-lg cursor-pointer transition select-none"
+                className="px-4 py-2 button-secondary rounded-full cursor-pointer transition select-none text-xs font-medium"
               >
                 Discard Sync
               </button>
               <button
                 onClick={handleCommitSync}
                 disabled={isSyncing}
-                className="px-4 py-2 bg-[#06C167] hover:bg-[#05a858] text-white text-xs font-bold rounded-lg cursor-pointer transition select-none flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2 button-primary rounded-full cursor-pointer transition select-none flex items-center gap-1.5 shadow-sm text-xs font-medium border border-transparent"
               >
                 {isSyncing ? (
                   <RefreshCw size={13} className="animate-spin" />
@@ -275,16 +275,16 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
 
           {/* Sync Stats Summary badges */}
           <div className="flex flex-wrap gap-2.5 text-xs font-bold">
-            <span className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-750 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40 p-1 px-3 rounded-lg">
+            <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 p-1 px-3 rounded-full">
               {added.length} Added
             </span>
-            <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-750 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 p-1 px-3 rounded-lg">
+            <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 p-1 px-3 rounded-full">
               {modified.length} Modified
             </span>
-            <span className="bg-red-50 dark:bg-red-950/20 text-red-750 dark:text-red-300 border border-red-200 dark:border-red-900/40 p-1 px-3 rounded-lg">
+            <span className="bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border border-red-200/60 dark:border-red-900/40 p-1 px-3 rounded-full">
               {missing.length} Missing
             </span>
-            <span className="bg-zinc-50 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-400 border border-zinc-150 dark:border-zinc-800 p-1 px-3 rounded-lg">
+            <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 p-1 px-3 rounded-full">
               {unchanged.length} Unchanged
             </span>
           </div>
@@ -293,7 +293,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 no-scrollbar pt-2">
             {added.length === 0 && modified.length === 0 && missing.length === 0 && (
               <div className="text-center py-10 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-zinc-150 dark:border-zinc-800 border-dashed">
-                <CheckCircle size={32} className="text-[#06C167]" />
+                <CheckCircle size={32} className="text-black dark:text-white" />
                 <p className="text-xs font-bold text-zinc-650">No Changes Detected</p>
                 <p className="text-[11px] text-zinc-450 mt-0.5">Scraped data exactly matches current database drivers.</p>
               </div>
@@ -384,6 +384,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
   };
 
   const handleStartAutoSync = async () => {
+    alert("handleStartAutoSync called!");
     setStatusMessage(null);
     const uid = currentUser?.uid || "default";
     const creds = getUberCredentials(uid);
@@ -888,7 +889,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
 
                 <button
                   onClick={handleCancelAutoSync}
-                  className="px-3 py-1.5 border border-red-200 bg-red-50 hover:bg-red-100 dark:hover:bg-red-950/40 text-red-700 font-bold text-xs rounded transition flex items-center gap-1 cursor-pointer"
+                  className="px-3.5 py-1.5 border border-red-200 bg-red-50 hover:bg-red-100 dark:hover:bg-red-950/40 text-red-700 font-medium text-xs rounded-full transition flex items-center gap-1 cursor-pointer"
                 >
                   <AlertCircle size={14} />
                   <span>সিঙ্ক বাতিল করুন (Cancel)</span>
@@ -968,7 +969,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                   >
                     Start Page
                   </label>
-                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded px-3 py-2 min-w-[130px]">
+                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded-none px-3 py-2 min-w-[130px]">
                     <Hash
                       size={13}
                       className="text-[var(--text-muted)] shrink-0"
@@ -984,7 +985,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                         setStartPage(isNaN(v) || v < 1 ? 1 : v);
                       }}
                       placeholder="1"
-                      className="w-14 bg-transparent text-sm font-bold text-[var(--bg-base)] outline-none placeholder-zinc-600 font-mono"
+                      className="w-14 bg-transparent text-sm font-medium text-[var(--bg-base)] outline-none placeholder-zinc-650 font-mono"
                     />
                     <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
                       {startPage > 1 ? `page ${startPage}` : "page 1"}
@@ -1003,7 +1004,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                   >
                     Page Limit
                   </label>
-                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded px-3 py-2 min-w-[140px]">
+                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded-none px-3 py-2 min-w-[140px]">
                     <Hash
                       size={13}
                       className="text-[var(--text-muted)] shrink-0"
@@ -1019,7 +1020,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                         setMaxPages(isNaN(v) || v < 1 ? 0 : v);
                       }}
                       placeholder="সব"
-                      className="w-14 bg-transparent text-sm font-bold text-[var(--bg-base)] outline-none placeholder-zinc-600 font-mono"
+                      className="w-14 bg-transparent text-sm font-medium text-[var(--bg-base)] outline-none placeholder-zinc-650 font-mono"
                     />
                     <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
                       {maxPages > 0 ? `${maxPages}টি page` : "সব page"}
@@ -1033,7 +1034,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 <button
                   onClick={handleStartAutoSync}
                   disabled={!hasCreds || isSyncing || isPublicDeployment}
-                  className="px-6 py-3 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)] disabled:bg-[var(--bg-subtle)] dark:disabled:bg-[var(--text-strong)] text-black disabled:text-[var(--text-muted)] font-bold text-sm rounded transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shrink-0"
+                  className="px-6 py-3 button-primary disabled:bg-[var(--bg-subtle)] disabled:text-[var(--text-muted)] font-medium text-sm rounded-full transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shrink-0 border border-transparent"
                 >
                   <RefreshCw size={16} />
                   <span>
@@ -1063,7 +1064,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
               <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] block font-mono">
                 Live Sync Diagnostics Output:
               </span>
-              <div className="bg-[var(--text-strong)] text-[var(--brand-primary)]/90 p-4 rounded font-mono text-[10.5px] space-y-1 h-36 overflow-y-auto border border-zinc-900 shadow-inner leading-relaxed">
+              <div className="bg-[var(--text-strong)] text-[var(--brand-primary)]/90 p-4 rounded-xl font-mono text-[10.5px] space-y-1 h-36 overflow-y-auto border border-zinc-900 shadow-inner leading-relaxed">
                 <div className="text-[var(--text-muted)] flex items-center justify-between">
                   <span>
                     [
@@ -1225,7 +1226,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 onChange={(e) => setHtmlInput(e.target.value)}
                 placeholder='<div role="rowgroup" class="drivers-rows"> ... </div>'
                 rows={8}
-                className="w-full text-[var(--text-base)] bg-[var(--bg-base)] border border-[var(--border-base)] rounded p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] outline-none"
+                className="w-full text-input rounded-none p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
               ></textarea>
             </div>
 
@@ -1453,7 +1454,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={`User\nALTAF SHEIKH...\nPhone\n+880...\nEmail\n0133...`}
                 rows={8}
-                className="w-full text-[var(--text-strong)] bg-[var(--bg-base)] border border-[var(--border-base)] rounded p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] focus:border-[var(--brand-primary)] outline-none"
+                className="w-full text-input rounded-none p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
               ></textarea>
             </div>
 
