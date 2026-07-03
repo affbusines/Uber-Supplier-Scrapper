@@ -23,6 +23,11 @@ import {
   getCurrentUid,
   getScrapedPayouts,
   ScrapedPayout,
+  getAllPlateOwnerships,
+  claimPlateOwnership,
+  releasePlateOwnership,
+  PlateOwnership,
+  auth,
 } from "../firebase";
 import {
   Search,
@@ -125,6 +130,8 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   const [entryMode, setEntryMode] = useState<'single' | 'bulk'>('single');
   const [bulkPlates, setBulkPlates] = useState("");
   const [scrapedPayouts, setScrapedPayouts] = useState<ScrapedPayout[]>([]);
+  const [plateOwnerships, setPlateOwnerships] = useState<PlateOwnership[]>([]);
+  const [plateCheckLoading, setPlateCheckLoading] = useState(false);
 
   // ── INCOGNITO PRIVACY SHIELD STATE & HELPERS ──
   const [privacyShield, setPrivacyShield] = useState<boolean>(
@@ -212,13 +219,25 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     }
   };
 
+  const loadPlateOwnerships = async () => {
+    try {
+      const ownerships = await getAllPlateOwnerships();
+      setPlateOwnerships(ownerships);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     loadDailyLogs();
+    loadPlateOwnerships();
     window.addEventListener("daily_logs_updated", loadDailyLogs);
     window.addEventListener("scraped_payouts_updated", loadDailyLogs);
+    window.addEventListener("plate_registry_updated", loadPlateOwnerships);
     return () => {
       window.removeEventListener("daily_logs_updated", loadDailyLogs);
       window.removeEventListener("scraped_payouts_updated", loadDailyLogs);
+      window.removeEventListener("plate_registry_updated", loadPlateOwnerships);
     };
   }, []);
 
@@ -2103,24 +2122,37 @@ ${cardsHTML}
 
       const handleAddDailyLog = async (e: React.FormEvent) => {
       e.preventDefault();
+      const myName = (auth as any)?.currentUser?.displayName || (auth as any)?.currentUser?.email || myUid;
+
       if (entryMode === 'single') {
         if (!dailyPlate || !dailyDate) return;
         const cleanPlate = dailyPlate.trim().toUpperCase();
-        const newLog: DailyLog = {
-          id: `log_${Date.now()}`,
-          date: dailyDate,
-          partnerId: myUid,
-          vehiclePlate: cleanPlate,
-          submittedAt: new Date().toISOString()
-        };
+        setPlateCheckLoading(true);
         try {
+          await claimPlateOwnership(cleanPlate, myUid, myName);
+          const newLog: DailyLog = {
+            id: `log_${Date.now()}`,
+            date: dailyDate,
+            partnerId: myUid,
+            vehiclePlate: cleanPlate,
+            submittedAt: new Date().toISOString()
+          };
           await saveDailyLog(newLog);
           setDailyPlate("");
           const logs = await getDailyLogs();
           setDailyLogs(logs);
-          showToast("success", `Vehicle ${cleanPlate} added to your daily log.`);
-        } catch (err) {
-          showToast("error", "Failed to save daily log.");
+          await loadPlateOwnerships();
+          showToast("success", `✓ Vehicle ${cleanPlate} registered & added to your daily log.`);
+        } catch (err: any) {
+          const msg: string = err?.message || '';
+          if (msg.startsWith('PLATE_CONFLICT:')) {
+            const ownerName = msg.replace('PLATE_CONFLICT:', '');
+            showToast("error", `❌ Plate ${cleanPlate} is already registered by: ${ownerName}`);
+          } else {
+            showToast("error", "Failed to save daily log.");
+          }
+        } finally {
+          setPlateCheckLoading(false);
         }
       } else {
         if (!bulkPlates.trim() || !dailyDate) return;
@@ -2134,10 +2166,15 @@ ${cardsHTML}
           return;
         }
 
+        setPlateCheckLoading(true);
         try {
-          let count = 0;
-          await Promise.all(
-            platesArray.map(async (plate, idx) => {
+          let added = 0;
+          const conflicts: string[] = [];
+
+          for (let idx = 0; idx < platesArray.length; idx++) {
+            const plate = platesArray[idx];
+            try {
+              await claimPlateOwnership(plate, myUid, myName);
               const newLog: DailyLog = {
                 id: `log_${Date.now()}_${idx}`,
                 date: dailyDate,
@@ -2146,15 +2183,30 @@ ${cardsHTML}
                 submittedAt: new Date().toISOString()
               };
               await saveDailyLog(newLog);
-              count++;
-            })
-          );
+              added++;
+            } catch (err: any) {
+              const msg: string = err?.message || '';
+              if (msg.startsWith('PLATE_CONFLICT:')) {
+                const ownerName = msg.replace('PLATE_CONFLICT:', '');
+                conflicts.push(`${plate} (owned by ${ownerName})`);
+              }
+            }
+          }
+
           setBulkPlates("");
           const logs = await getDailyLogs();
           setDailyLogs(logs);
-          showToast("success", `Successfully added ${count} vehicle logs.`);
+          await loadPlateOwnerships();
+
+          if (conflicts.length > 0) {
+            showToast("error", `⚠️ ${added} added. Skipped ${conflicts.length} conflict(s): ${conflicts.join(', ')}`);
+          } else {
+            showToast("success", `✓ Successfully registered and added ${added} vehicle logs.`);
+          }
         } catch (err) {
           showToast("error", "Failed to save some daily logs.");
+        } finally {
+          setPlateCheckLoading(false);
         }
       }
     };
@@ -2270,12 +2322,63 @@ ${cardsHTML}
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-black hover:bg-zinc-850 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-[0.97]"
+                  disabled={plateCheckLoading}
+                  className="w-full py-2.5 bg-black hover:bg-zinc-850 dark:bg-white dark:hover:bg-zinc-200 disabled:opacity-60 text-white dark:text-black text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-[0.97]"
                 >
-                  <Plus size={14} className="stroke-[2.5]" />
-                  <span>{entryMode === 'single' ? 'Add Vehicle Log' : 'Bulk Add Vehicles'}</span>
+                  {plateCheckLoading ? (
+                    <>
+                      <RefreshCw size={13} className="animate-spin stroke-[2.5]" />
+                      <span>Checking plate ownership...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={14} className="stroke-[2.5]" />
+                      <span>{entryMode === 'single' ? 'Register & Add Log' : 'Register & Bulk Add'}</span>
+                    </>
+                  )}
                 </button>
               </form>
+
+              {/* ── My Registered Plates ── */}
+              {(() => {
+                const myPlates = plateOwnerships.filter(o => o.ownerId === myUid);
+                if (myPlates.length === 0) return null;
+                return (
+                  <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-2.5">
+                    <h4 className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+                      My Registered Plates ({myPlates.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {myPlates.map(ownership => (
+                        <div
+                          key={ownership.plate}
+                          className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 group"
+                        >
+                          <span className="text-[11px] font-mono font-extrabold text-black dark:text-white uppercase tracking-wide">
+                            {ownership.plate}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Release plate "${ownership.plate}"? Others will be able to claim it.`)) return;
+                              try {
+                                await releasePlateOwnership(ownership.plate, myUid);
+                                await loadPlateOwnerships();
+                                showToast('info', `Plate ${ownership.plate} released.`);
+                              } catch (err: any) {
+                                showToast('error', err?.message || 'Release failed.');
+                              }
+                            }}
+                            title="Release this plate"
+                            className="text-zinc-400 hover:text-red-500 transition cursor-pointer opacity-0 group-hover:opacity-100 ml-0.5"
+                          >
+                            <X size={11} className="stroke-[3]" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Entries Log List Column */}
@@ -2345,6 +2448,35 @@ ${cardsHTML}
               </div>
             </div>
           </div>
+
+          {/* ── Global Plate Registry Banner ── */}
+          {(() => {
+            const allOtherPlates = plateOwnerships.filter(o => o.ownerId !== myUid);
+            if (allOtherPlates.length === 0) return null;
+            return (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11.5px] font-extrabold text-amber-900 dark:text-amber-200 mb-2">
+                      {allOtherPlates.length} plate{allOtherPlates.length > 1 ? 's are' : ' is'} registered by other partners — you cannot add these:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {allOtherPlates.map(o => (
+                        <span
+                          key={o.plate}
+                          title={`Owned by ${o.ownerName}`}
+                          className="text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50 px-2 py-0.5 rounded-md"
+                        >
+                          🔒 {o.plate}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     );

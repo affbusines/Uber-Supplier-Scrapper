@@ -989,6 +989,133 @@ export interface ScrapedPayout {
   description?: string;
 }
 
+// ── PLATE OWNERSHIP REGISTRY (Global/Shared — not per-user) ──
+// Ensures a vehicle plate can only be logged by one partner at a time.
+
+export interface PlateOwnership {
+  plate: string;       // Uppercase plate e.g. "DHK-GA-39-7674"
+  ownerId: string;     // UID of the partner who claimed it
+  ownerName: string;   // Display name / email of the owner
+  claimedAt: string;   // ISO timestamp of claim
+}
+
+const PLATE_REGISTRY_KEY = 'uber_plate_registry'; // shared localStorage key (no uid prefix)
+
+function getLocalPlateRegistry(): Record<string, PlateOwnership> {
+  const raw = localStorage.getItem(PLATE_REGISTRY_KEY);
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch (_) { return {}; }
+}
+
+function saveLocalPlateRegistry(registry: Record<string, PlateOwnership>) {
+  localStorage.setItem(PLATE_REGISTRY_KEY, JSON.stringify(registry));
+}
+
+/** Fetch all claimed plates from the shared registry */
+export async function getAllPlateOwnerships(): Promise<PlateOwnership[]> {
+  const registry = getLocalPlateRegistry();
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const col = collection(db, 'shared_plates');
+      const snap = await getDocs(col);
+      snap.forEach(docSnap => {
+        const data = docSnap.data() as PlateOwnership;
+        registry[data.plate] = data;
+      });
+      saveLocalPlateRegistry(registry);
+    } catch (err) {
+      console.error('Error fetching plate registry from Firestore:', err);
+    }
+  }
+  return Object.values(registry);
+}
+
+/** Get the owner of a specific plate (null if unclaimed) */
+export async function getPlateOwner(plate: string): Promise<PlateOwnership | null> {
+  const key = plate.trim().toUpperCase();
+  const registry = getLocalPlateRegistry();
+
+  if (registry[key]) return registry[key];
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const docRef = doc(db, 'shared_plates', key);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as PlateOwnership;
+        registry[key] = data;
+        saveLocalPlateRegistry(registry);
+        return data;
+      }
+    } catch (err) {
+      console.error('Error checking plate ownership in Firestore:', err);
+    }
+  }
+  return null;
+}
+
+/** Claim a plate for the current user. Throws if already owned by someone else. */
+export async function claimPlateOwnership(
+  plate: string,
+  ownerId: string,
+  ownerName: string
+): Promise<void> {
+  const key = plate.trim().toUpperCase();
+  const existing = await getPlateOwner(key);
+
+  if (existing && existing.ownerId !== ownerId) {
+    throw new Error(`PLATE_CONFLICT:${existing.ownerName}`);
+  }
+  if (existing && existing.ownerId === ownerId) {
+    return; // Already owned by same user — no-op
+  }
+
+  const ownership: PlateOwnership = {
+    plate: key,
+    ownerId,
+    ownerName,
+    claimedAt: new Date().toISOString(),
+  };
+
+  const registry = getLocalPlateRegistry();
+  registry[key] = ownership;
+  saveLocalPlateRegistry(registry);
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      await setDoc(doc(db, 'shared_plates', key), ownership);
+    } catch (err) {
+      console.error('Error saving plate ownership to Firestore:', err);
+    }
+  }
+  window.dispatchEvent(new Event('plate_registry_updated'));
+}
+
+/** Release a plate back to the pool (only owner can release) */
+export async function releasePlateOwnership(plate: string, requestingUid: string): Promise<void> {
+  const key = plate.trim().toUpperCase();
+  const existing = await getPlateOwner(key);
+
+  if (!existing) return;
+  if (existing.ownerId !== requestingUid) {
+    throw new Error('RELEASE_DENIED: You do not own this plate.');
+  }
+
+  const registry = getLocalPlateRegistry();
+  delete registry[key];
+  saveLocalPlateRegistry(registry);
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      await deleteDoc(doc(db, 'shared_plates', key));
+    } catch (err) {
+      console.error('Error releasing plate ownership from Firestore:', err);
+    }
+  }
+  window.dispatchEvent(new Event('plate_registry_updated'));
+}
+
 export async function saveDailyLog(log: DailyLog): Promise<void> {
   const uid = getCurrentUid();
   const localLogsStr = localStorage.getItem(`daily_logs_${uid}`);
