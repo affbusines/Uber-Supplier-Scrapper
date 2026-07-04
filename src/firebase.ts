@@ -576,9 +576,18 @@ export async function dismissChangeFlag(uuid: string): Promise<void> {
 export async function startRewardTracking(
   uuid: string,
   currentTipCount: number,
-  rewardCycleSize: number = 52
+  rewardCycleSize: number = 52,
+  expiryDays: number | null = null
 ): Promise<void> {
   const nowStr = new Date().toISOString();
+  let expiresAt: string | null = null;
+  const days = expiryDays !== null ? expiryDays : (getGlobalSettings().default_expiry_days || 0);
+  if (days > 0) {
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + days);
+    expiresAt = expDate.toISOString();
+  }
+
   const rewardState = {
     active: true,
     start_tip_count: currentTipCount,
@@ -587,7 +596,9 @@ export async function startRewardTracking(
     reward_cycle_size: rewardCycleSize,
     started_at: nowStr,
     last_calculated_at: nowStr,
-    completed: false
+    completed: false,
+    expires_at: expiresAt || undefined,
+    expired: false
   };
 
   let existingDrivers = getLocalDrivers();
@@ -634,6 +645,36 @@ export async function resetReward(uuid: string): Promise<void> {
   window.dispatchEvent(new Event('driver_db_updated'));
 }
 
+/**
+ * Auto-expires reward tracking for a driver when the deadline is crossed.
+ */
+export async function expireRewardState(uuid: string, currentReward: any): Promise<void> {
+  const updatedReward = {
+    ...currentReward,
+    active: false,
+    expired: true
+  };
+  
+  let existingDrivers = getLocalDrivers();
+  const existing = existingDrivers[uuid];
+  if (existing) {
+    existing.reward = updatedReward;
+    existingDrivers[uuid] = existing;
+    saveLocalDrivers(existingDrivers);
+  }
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const docRef = doc(db, 'users', getCurrentUid(), 'drivers', uuid);
+      await setDoc(docRef, { reward: updatedReward }, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${getCurrentUid()}/drivers/${uuid}`);
+    }
+  }
+
+  window.dispatchEvent(new Event('driver_db_updated'));
+}
+
 // ── NEW GLOBAL SETTINGS, NOTIFICATIONS & BULK OPERATIONS HELPERS ──
 
 import { GlobalSettings, NotificationSettings } from './types';
@@ -645,9 +686,15 @@ const LAST_SYNC_KEY = 'last_synced_at';
 export function getGlobalSettings(): GlobalSettings {
   const d = localStorage.getItem(SETTINGS_KEY);
   if (d) {
-    try { return JSON.parse(d); } catch (_) {}
+    try { 
+      const parsed = JSON.parse(d); 
+      return {
+        default_reward_cycle: parsed.default_reward_cycle || 52,
+        default_expiry_days: parsed.default_expiry_days || 0
+      };
+    } catch (_) {}
   }
-  return { default_reward_cycle: 52 };
+  return { default_reward_cycle: 52, default_expiry_days: 0 };
 }
 
 export async function saveGlobalSettings(settings: GlobalSettings): Promise<void> {
@@ -744,10 +791,23 @@ export async function bulkDeleteDrivers(uuids: string[], hardDelete: boolean = f
   window.dispatchEvent(new Event('driver_db_updated'));
 }
 
-export async function bulkStartRewardTracking(uuids: string[], customCycle: number | null = null): Promise<void> {
+export async function bulkStartRewardTracking(
+  uuids: string[],
+  customCycle: number | null = null,
+  customExpiryDays: number | null = null
+): Promise<void> {
   const nowStr = new Date().toISOString();
   let defaultCycle = getGlobalSettings().default_reward_cycle || 52;
   const cycleSize = customCycle || defaultCycle;
+  
+  const expiryDays = customExpiryDays !== null ? customExpiryDays : (getGlobalSettings().default_expiry_days || 0);
+  let expiresAt: string | null = null;
+  if (expiryDays > 0) {
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + expiryDays);
+    expiresAt = expDate.toISOString();
+  }
+
   const existingDrivers = getLocalDrivers();
 
   for (const uuid of uuids) {
@@ -761,7 +821,9 @@ export async function bulkStartRewardTracking(uuids: string[], customCycle: numb
         reward_cycle_size: cycleSize,
         started_at: nowStr,
         last_calculated_at: nowStr,
-        completed: false
+        completed: false,
+        expires_at: expiresAt || undefined,
+        expired: false
       };
 
       existing.reward = rewardState;

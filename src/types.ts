@@ -9,6 +9,8 @@ export interface RewardState {
   completed: boolean;
   f10_done?: boolean;
   f50_done?: boolean;
+  expires_at?: string;
+  expired?: boolean;
 }
 
 export interface Driver {
@@ -53,6 +55,7 @@ export type ActiveTab =
 
 export interface GlobalSettings {
   default_reward_cycle: number;
+  default_expiry_days?: number;
 }
 
 export interface NotificationSettings {

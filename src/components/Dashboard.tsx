@@ -10,6 +10,7 @@ import {
   dismissChangeFlag,
   startRewardTracking,
   resetReward,
+  expireRewardState,
   bulkDeleteDrivers,
   bulkStartRewardTracking,
   bulkResetReward,
@@ -70,6 +71,15 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMenu }: DashboardProps) {
+  const getExpiryText = (expiresAt?: string) => {
+    if (!expiresAt) return null;
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 'Expired';
+    if (days === 1) return 'Expires tomorrow';
+    return `Expires in ${days} days`;
+  };
+
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,6 +96,11 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     | "status_active"
     | "status_rejected"
     | "status_applied"
+    | "funnel_not_started"
+    | "funnel_active_under_10"
+    | "funnel_active_silver"
+    | "funnel_active_gold"
+    | "funnel_completed"
   >("all");
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [sortBy, setSortBy] = useState<"trips_desc" | "trips_asc" | "name_asc" | "newest_desc">("trips_desc");
@@ -107,11 +122,13 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   // States for Reward Tracking
   const [rewardTrackingDriver, setRewardTrackingDriver] = useState<Driver | null>(null);
   const [rewardCycleInput, setRewardCycleInput] = useState<number>(52);
+  const [rewardExpiryInput, setRewardExpiryInput] = useState<number>(0);
   const [resetConfirmationDriver, setResetConfirmationDriver] = useState<Driver | null>(null);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [showBulkResetModal, setShowBulkResetModal] = useState(false);
   const [showBulkStartModal, setShowBulkStartModal] = useState(false);
   const [bulkStartCycleSize, setBulkStartCycleSize] = useState(52);
+  const [bulkStartExpiryDays, setBulkStartExpiryDays] = useState<number>(0);
 
   // Active Dropdown Menu index on drivers list
   const [activeMenuDriverId, setActiveMenuDriverId] = useState<string | null>(null);
@@ -208,6 +225,19 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     return () => unsub();
   }, []);
 
+  // Auto-expire rewards whose deadline has passed
+  useEffect(() => {
+    if (loading || drivers.length === 0) return;
+    const now = new Date();
+    drivers.forEach((drv) => {
+      if (drv.reward && drv.reward.active && drv.reward.expires_at && !drv.reward.expired) {
+        if (new Date(drv.reward.expires_at) < now) {
+          expireRewardState(drv.uuid, drv.reward);
+        }
+      }
+    });
+  }, [drivers, loading]);
+
   const loadDailyLogs = async () => {
     try {
       const logs = await getDailyLogs();
@@ -277,6 +307,33 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   // contact changes count
   const contactChangesCount = drivers.filter(d => !d.deleted && d.has_contact_change).length;
 
+  // funnel stats calculations
+  const funnelStats = (() => {
+    const notDeletedDrivers = drivers.filter(d => !d.deleted);
+    const total = notDeletedDrivers.length;
+    
+    const notStarted = notDeletedDrivers.filter(d => !d.reward || !d.reward.active).length;
+    const activeUnder10 = notDeletedDrivers.filter(d => d.reward?.active && !d.reward.completed && (d.tip_count - d.reward.start_tip_count) < 10).length;
+    const activeSilver = notDeletedDrivers.filter(d => d.reward?.active && !d.reward.completed && (d.tip_count - d.reward.start_tip_count) >= 10 && (d.tip_count - d.reward.start_tip_count) < 50).length;
+    const activeGold = notDeletedDrivers.filter(d => d.reward?.active && !d.reward.completed && (d.tip_count - d.reward.start_tip_count) >= 50).length;
+    const completed = notDeletedDrivers.filter(d => d.reward?.completed).length;
+
+    const getPct = (count: number) => total === 0 ? 0 : Math.round((count / total) * 100);
+
+    return {
+      notStarted,
+      notStartedPct: getPct(notStarted),
+      activeUnder10,
+      activeUnder10Pct: getPct(activeUnder10),
+      activeSilver,
+      activeSilverPct: getPct(activeSilver),
+      activeGold,
+      activeGoldPct: getPct(activeGold),
+      completed,
+      completedPct: getPct(completed)
+    };
+  })();
+
   // Filter & Search Logic for Drivers
   const filteredDrivers = drivers.filter((drv) => {
     if (!showDeleted && drv.deleted) return false;
@@ -311,6 +368,27 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       if (drv.deleted || !drv.reward?.active) return false;
       const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
       return matchesQuery && currentCycleTrips >= 50;
+    }
+    if (filterMode === "funnel_not_started") {
+      return matchesQuery && (!drv.reward || !drv.reward.active) && !drv.deleted;
+    }
+    if (filterMode === "funnel_active_under_10") {
+      if (drv.deleted || !drv.reward?.active || drv.reward?.completed) return false;
+      const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
+      return matchesQuery && currentCycleTrips < 10;
+    }
+    if (filterMode === "funnel_active_silver") {
+      if (drv.deleted || !drv.reward?.active || drv.reward?.completed) return false;
+      const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
+      return matchesQuery && currentCycleTrips >= 10 && currentCycleTrips < 50;
+    }
+    if (filterMode === "funnel_active_gold") {
+      if (drv.deleted || !drv.reward?.active || drv.reward?.completed) return false;
+      const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
+      return matchesQuery && currentCycleTrips >= 50;
+    }
+    if (filterMode === "funnel_completed") {
+      return matchesQuery && drv.reward?.completed && !drv.deleted;
     }
     if (filterMode === "most_trips") return matchesQuery && drv.tip_count >= 150 && !drv.deleted;
     if (filterMode === "active") return matchesQuery && !drv.deleted;
@@ -742,6 +820,122 @@ ${cardsHTML}
             </div>
           </div>
 
+          {/* Milestone Funnel Statistics Card */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-black dark:text-white flex items-center gap-2">
+                  <span>📊</span> Milestone Funnel Statistics
+                </h3>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  Distribution of active fleet across reward cycle progress (click to filter list)
+                </p>
+              </div>
+              <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400 font-bold px-2 py-0.5 rounded">
+                Real-time
+              </span>
+            </div>
+
+            {/* Funnel Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+              {[
+                { 
+                  id: 'funnel_not_started', 
+                  label: 'Not Started', 
+                  description: 'No active reward tracking',
+                  count: funnelStats.notStarted, 
+                  percentage: funnelStats.notStartedPct,
+                  barColor: 'bg-zinc-300 dark:bg-zinc-700',
+                  textColor: 'text-zinc-600 dark:text-zinc-400',
+                  icon: '💤'
+                },
+                { 
+                  id: 'funnel_active_under_10', 
+                  label: 'Active (0-9 Trips)', 
+                  description: 'Started cycle, under 10 trips',
+                  count: funnelStats.activeUnder10, 
+                  percentage: funnelStats.activeUnder10Pct,
+                  barColor: 'bg-blue-200 dark:bg-blue-900/60',
+                  textColor: 'text-blue-600 dark:text-blue-400',
+                  icon: '⏳'
+                },
+                { 
+                  id: 'funnel_active_silver', 
+                  label: 'Active Silver (10+)', 
+                  description: 'F10 reached & in progress',
+                  count: funnelStats.activeSilver, 
+                  percentage: funnelStats.activeSilverPct,
+                  barColor: 'bg-amber-300 dark:bg-amber-800/60',
+                  textColor: 'text-amber-700 dark:text-amber-400',
+                  icon: '🔥'
+                },
+                { 
+                  id: 'funnel_active_gold', 
+                  label: 'Active Gold (50+)', 
+                  description: 'F50 reached & near target',
+                  count: funnelStats.activeGold, 
+                  percentage: funnelStats.activeGoldPct,
+                  barColor: 'bg-red-300 dark:bg-red-900/40',
+                  textColor: 'text-red-600 dark:text-red-400',
+                  icon: '⚡'
+                },
+                { 
+                  id: 'funnel_completed', 
+                  label: 'Completed', 
+                  description: 'Fully completed target',
+                  count: funnelStats.completed, 
+                  percentage: funnelStats.completedPct,
+                  barColor: 'bg-emerald-400 dark:bg-emerald-800/60',
+                  textColor: 'text-emerald-700 dark:text-emerald-400',
+                  icon: '🎉'
+                }
+              ].map((step) => {
+                const isSelected = filterMode === step.id;
+                return (
+                  <div 
+                    key={step.id}
+                    onClick={() => {
+                      setFilterMode(filterMode === step.id ? 'all' : step.id as any);
+                      document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`group relative flex flex-col justify-between p-3.5 rounded-xl border transition-all cursor-pointer select-none overflow-hidden h-[96px] ${
+                      isSelected 
+                        ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-800/45' 
+                        : 'border-zinc-150 hover:border-zinc-300 dark:border-zinc-850/40 dark:hover:border-zinc-700 bg-zinc-50/10 dark:bg-zinc-900/20'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start z-10 relative">
+                      <span className="text-sm shrink-0">{step.icon}</span>
+                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-zinc-850 shadow-2xs font-mono ${step.textColor}`}>
+                        {step.percentage}%
+                      </span>
+                    </div>
+
+                    <div className="z-10 relative mt-2 text-left">
+                      <div className="flex items-center gap-1.5 leading-none">
+                        <span className="text-[11px] font-black text-black dark:text-white leading-none">
+                          {step.label}
+                        </span>
+                        {isSelected && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold text-zinc-500 font-mono block mt-1">
+                        {step.count} {step.count === 1 ? 'driver' : 'drivers'}
+                      </span>
+                    </div>
+
+                    {/* Funnel Progress Background Bar */}
+                    <div 
+                      className={`absolute left-0 bottom-0 top-0 ${step.barColor} opacity-15 dark:opacity-20 transition-all duration-500`} 
+                      style={{ width: `${step.percentage}%` }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Toolbar */}
           <div id="drivers-list-section" className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
@@ -791,6 +985,23 @@ ${cardsHTML}
                 >
                   F50
                 </button>
+                {filterMode.startsWith('funnel_') && (
+                  <button
+                    onClick={() => setFilterMode('all')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-black text-white dark:bg-white dark:text-black shadow-xs shrink-0 flex items-center gap-1.5 ml-1"
+                  >
+                    <span>
+                      Funnel: {
+                        filterMode === 'funnel_not_started' ? 'Not Started' :
+                        filterMode === 'funnel_active_under_10' ? 'Active (<10)' :
+                        filterMode === 'funnel_active_silver' ? 'Silver (10+)' :
+                        filterMode === 'funnel_active_gold' ? 'Gold (50+)' :
+                        'Completed'
+                      }
+                    </span>
+                    <span className="text-[10px]">✕</span>
+                  </button>
+                )}
               </div>
 
               {/* Sort Options */}
@@ -968,11 +1179,21 @@ ${cardsHTML}
                               onClick={() => {
                                 setRewardTrackingDriver(drv);
                                 setRewardCycleInput(52);
+                                setRewardExpiryInput(getGlobalSettings().default_expiry_days || 0);
                               }}
                               className="interactive-button px-3 py-1.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[11px] font-bold rounded-lg flex items-center gap-1 shadow-xs cursor-pointer select-none w-max"
                             >
                               <span>▶ Start Reward</span>
                             </button>
+                          ) : drv.reward.expired ? (
+                            <div className="flex flex-col gap-1 select-none">
+                              <span className="bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-350 border border-red-200 dark:border-red-900/60 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 w-max">
+                                <span>❌ Expired</span>
+                              </span>
+                              <span className="text-[9px] text-zinc-400 font-bold pl-1 uppercase font-mono tracking-wider">
+                                Deadline passed
+                              </span>
+                            </div>
                           ) : drv.reward.completed ? (
                             <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 w-max select-none">
                               <span>🎉 Reward Complete!</span>
@@ -995,6 +1216,11 @@ ${cardsHTML}
                               <span className="text-[9px] text-zinc-400 font-bold pl-1 uppercase font-mono tracking-wider">
                                 target: {drv.reward.next_reward_at} trips
                               </span>
+                              {drv.reward.expires_at && (
+                                <span className="text-[9px] text-amber-600 dark:text-amber-500 font-bold pl-1 uppercase font-mono tracking-wider">
+                                  {getExpiryText(drv.reward.expires_at)}
+                                </span>
+                              )}
                             </div>
                           )}
                         </td>
@@ -1577,7 +1803,10 @@ ${cardsHTML}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full pb-1 -mb-1 md:pb-0 md:mb-0 w-full md:w-auto shrink-0">
           {/* Bulk Start Reward */}
           <button
-            onClick={() => setShowBulkStartModal(true)}
+            onClick={() => {
+              setBulkStartExpiryDays(getGlobalSettings().default_expiry_days || 0);
+              setShowBulkStartModal(true);
+            }}
             className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-750 dark:border-zinc-800 rounded-xl text-[11px] font-extrabold transition cursor-pointer select-none text-white shrink-0 flex items-center gap-1.5"
           >
             🏆 Start Reward
@@ -1933,11 +2162,21 @@ ${cardsHTML}
                                     onClick={() => {
                                       setRewardTrackingDriver(drv);
                                       setRewardCycleInput(52);
+                                      setRewardExpiryInput(getGlobalSettings().default_expiry_days || 0);
                                     }}
                                     className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10.5px] font-bold rounded-full flex items-center gap-1 shadow-xs cursor-pointer select-none w-max"
                                   >
                                     <span>▶ Start Reward</span>
                                   </button>
+                                ) : drv.reward.expired ? (
+                                  <div className="flex flex-col gap-0.5 select-none">
+                                    <span className="bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-[10.5px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 w-max">
+                                      <span>❌ Expired</span>
+                                    </span>
+                                    <span className="text-[9px] text-zinc-400 font-bold pl-0.5 uppercase font-mono tracking-wider">
+                                      Deadline passed
+                                    </span>
+                                  </div>
                                 ) : drv.reward.completed ? (
                                   <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-[10.5px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 w-max select-none">
                                     <span>🎉 Active</span>
@@ -1953,13 +2192,18 @@ ${cardsHTML}
                                         <span>🔥 {drv.reward.trips_remaining} left</span>
                                       </span>
                                     ) : (
-                                      <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-transparent text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-max">
+                                      <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 border border-transparent text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-max">
                                         <span>⏳ {drv.reward.trips_remaining} left</span>
                                       </span>
                                     )}
                                     <span className="text-[9px] text-zinc-400 font-bold pl-0.5 uppercase font-mono tracking-wider">
                                       target: {drv.reward.next_reward_at}
                                     </span>
+                                    {drv.reward.expires_at && (
+                                      <span className="text-[9px] text-amber-600 dark:text-amber-500 font-bold pl-0.5 uppercase font-mono tracking-wider">
+                                        {getExpiryText(drv.reward.expires_at)}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -3503,29 +3747,42 @@ ${cardsHTML}
             <h3 className="font-bold text-black text-base">Start Reward Tracking</h3>
             <p className="text-xs text-zinc-500">{rewardTrackingDriver.name}</p>
 
-            <div className="flex items-center justify-center gap-3 py-2">
-              <label className="text-xs font-bold text-zinc-700">Cycle size (trips):</label>
-              <input
-                type="number"
-                min="1"
-                max="1000"
-                value={rewardCycleInput}
-                onChange={(e) => setRewardCycleInput(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-24 text-center bg-zinc-100 border-none rounded-lg p-1.5 text-xs font-bold focus:ring-1 focus:ring-black outline-none"
-              />
+            <div className="space-y-3 py-2 text-left max-w-[240px] mx-auto">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-xs font-bold text-zinc-700">Cycle size (trips):</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={rewardCycleInput}
+                  onChange={(e) => setRewardCycleInput(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-24 text-center bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg p-1.5 text-xs font-bold focus:ring-1 focus:ring-black outline-none text-black dark:text-white"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-xs font-bold text-zinc-700">Expiry (days, 0=none):</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="365"
+                  value={rewardExpiryInput}
+                  onChange={(e) => setRewardExpiryInput(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-24 text-center bg-zinc-100 dark:bg-zinc-800 border-none rounded-lg p-1.5 text-xs font-bold focus:ring-1 focus:ring-black outline-none text-black dark:text-white"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={() => setRewardTrackingDriver(null)}
-                className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-black text-xs font-bold rounded-lg"
+                className="flex-1 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-black dark:text-white text-xs font-bold rounded-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={async () => {
                   try {
-                    await startRewardTracking(rewardTrackingDriver.uuid, rewardTrackingDriver.tip_count, rewardCycleInput);
+                    await startRewardTracking(rewardTrackingDriver.uuid, rewardTrackingDriver.tip_count, rewardCycleInput, rewardExpiryInput);
                     showToast("success", `Reward tracking started for ${rewardTrackingDriver.name}`);
                     setRewardTrackingDriver(null);
                   } catch (_) {
@@ -3724,6 +3981,20 @@ ${cardsHTML}
                   className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-bold text-black dark:text-white"
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] text-zinc-400 uppercase tracking-wider">
+                  Expiry Limit (Days, 0 for none):
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="365"
+                  value={bulkStartExpiryDays}
+                  onChange={(e) => setBulkStartExpiryDays(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-bold text-black dark:text-white"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2 pt-2 text-xs">
@@ -3736,7 +4007,7 @@ ${cardsHTML}
               <button
                 onClick={async () => {
                   try {
-                    await bulkStartRewardTracking(Array.from(selectedIds), bulkStartCycleSize);
+                    await bulkStartRewardTracking(Array.from(selectedIds), bulkStartCycleSize, bulkStartExpiryDays);
                     setSelectedIds(new Set());
                     showToast("success", `Started reward tracking for ${selectedIds.size} drivers.`);
                     setShowBulkStartModal(false);

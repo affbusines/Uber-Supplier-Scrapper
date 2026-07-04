@@ -41,7 +41,36 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  // Synchronize activeTab state with URL hash
+  const getTabFromHash = (): ActiveTab => {
+    const hash = window.location.hash.replace('#/', '').replace('#', '');
+    const validTabs: ActiveTab[] = [
+      'home', 'inbox', 'documents', 'drivers', 'vehicles', 'reports', 'earnings', 
+      'live_map', 'banking', 'invoices', 'account', 'help', 'install', 'import', 
+      'sandbox', 'connection', 'settings'
+    ];
+    return validTabs.includes(hash as ActiveTab) ? (hash as ActiveTab) : 'home';
+  };
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(getTabFromHash);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveTab(getTabFromHash());
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Set initial hash if none exists
+    if (!window.location.hash) {
+      window.location.hash = '#/home';
+    }
+    
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleTabChange = (tab: ActiveTab) => {
+    window.location.hash = '#/' + tab;
+  };
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -171,11 +200,11 @@ export default function App() {
   const renderActiveScreen = () => {
     switch (activeTab) {
       case 'home':
-        return <Dashboard activeSubView="home" onNavigate={setActiveTab} onOpenMenu={() => setMobileMenuOpen(true)} />;
+        return <Dashboard activeSubView="home" onNavigate={handleTabChange} onOpenMenu={() => setMobileMenuOpen(true)} />;
       case 'drivers':
-        return <Dashboard activeSubView="drivers" onNavigate={setActiveTab} onOpenMenu={() => setMobileMenuOpen(true)} />;
+        return <Dashboard activeSubView="drivers" onNavigate={handleTabChange} onOpenMenu={() => setMobileMenuOpen(true)} />;
       case 'vehicles':
-        return <Dashboard activeSubView="vehicles" onNavigate={setActiveTab} onOpenMenu={() => setMobileMenuOpen(true)} />;
+        return <Dashboard activeSubView="vehicles" onNavigate={handleTabChange} onOpenMenu={() => setMobileMenuOpen(true)} />;
       case 'import':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
@@ -188,7 +217,7 @@ export default function App() {
               </div>
             </header>
             <div className="p-4 sm:p-6 max-w-4xl w-full mx-auto">
-              <ImportHTML onSuccess={() => setActiveTab('drivers')} />
+              <ImportHTML onSuccess={() => handleTabChange('drivers')} />
             </div>
           </div>
         );
@@ -333,7 +362,7 @@ export default function App() {
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id);
+                  handleTabChange(item.id);
                   if (isDrawer) setMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center gap-4 px-4 py-2.5 rounded-md text-left text-[14px] font-medium transition-colors interactive-button relative ${
@@ -393,7 +422,7 @@ export default function App() {
               <span>Database Sync Status: Data is {Math.floor(hoursSince / 24)} days old. Please sync from portal.</span>
             </div>
             <button 
-              onClick={() => setActiveTab('import')}
+              onClick={() => handleTabChange('import')}
               className="bg-amber-900 dark:bg-amber-400 text-white dark:text-black rounded-full p-1.5 px-4 hover:opacity-90 text-[11px] interactive-button font-bold"
             >
               Sync Now

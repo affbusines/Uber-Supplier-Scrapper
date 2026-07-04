@@ -43,6 +43,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
 
   // Settings States
   const [rewardCycle, setRewardCycle] = useState<number>(52);
+  const [defaultExpiryDays, setDefaultExpiryDays] = useState<number>(0);
   const [rewardAlert, setRewardAlert] = useState<boolean>(true);
   const [thresholds, setThresholds] = useState<number[]>([5, 3, 1]);
   const [syncReminder, setSyncReminder] = useState<boolean>(true);
@@ -160,7 +161,8 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
     });
 
     const currentGlobal = getGlobalSettings();
-    setRewardCycle(currentGlobal.default_reward_cycle);
+    setRewardCycle(currentGlobal.default_reward_cycle || 52);
+    setDefaultExpiryDays(currentGlobal.default_expiry_days || 0);
 
     const syncThemeInSettings = () => {
       const currentTheme =
@@ -204,7 +206,10 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
 
   const handleSaveRewardSettings = async () => {
     try {
-      await saveGlobalSettings({ default_reward_cycle: rewardCycle });
+      await saveGlobalSettings({ 
+        default_reward_cycle: rewardCycle,
+        default_expiry_days: defaultExpiryDays
+      });
       onShowToast("success", "⚙️ Global reward settings saved successfully!");
     } catch (err) {
       onShowToast("error", "Failed to save global settings.");
@@ -405,28 +410,51 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
               বা ওভাররাইড করতে পারেন।
             </p>
 
-            <div className="space-y-3 pt-2">
-              <label className="block text-xs font-bold text-[var(--text-base)] ">
-                Default Reward Cycle Size (Trips):
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  min="1"
-                  max="1000"
-                  value={rewardCycle}
-                  onChange={(e) =>
-                    setRewardCycle(Math.max(1, parseInt(e.target.value) || 1))
-                  }
-                  className="w-32 text-input text-center rounded-none px-3 py-2 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
-                />
-                <span className="text-xs text-[var(--text-muted)] dark:text-[var(--text-muted)]">
-                  trips per target cycle
-                </span>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[var(--text-base)]">
+                  Default Reward Cycle Size (Trips):
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={rewardCycle}
+                    onChange={(e) =>
+                      setRewardCycle(Math.max(1, parseInt(e.target.value) || 1))
+                    }
+                    className="w-32 text-input text-center rounded-none px-3 py-2 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
+                  />
+                  <span className="text-xs text-[var(--text-muted)]">
+                    trips per target cycle
+                  </span>
+                </div>
               </div>
+
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-xs font-bold text-[var(--text-base)]">
+                  Default Expiry Duration (Days, 0 for None):
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="365"
+                    value={defaultExpiryDays}
+                    onChange={(e) =>
+                      setDefaultExpiryDays(Math.max(0, parseInt(e.target.value) || 0))
+                    }
+                    className="w-32 text-input text-center rounded-none px-3 py-2 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
+                  />
+                  <span className="text-xs text-[var(--text-muted)]">
+                    days before expiration
+                  </span>
+                </div>
+              </div>
+
               <p className="text-[10px] text-[var(--text-muted)] italic">
-                * Standard corporate policy defines reward cycle size as 52
-                trips.
+                * Standard corporate policy defines reward cycle size as 52 trips.
               </p>
             </div>
           </div>
