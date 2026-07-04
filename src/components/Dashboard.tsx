@@ -17,6 +17,9 @@ import {
   getGlobalSettings,
   getNotificationSettings,
   dismissRewardMilestone,
+  updateDriverTags,
+  updateDriverStickyNote,
+  addDriverAuditLogEntry,
   getDailyLogs,
   saveDailyLog,
   deleteDailyLog,
@@ -225,6 +228,20 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     return () => unsub();
   }, []);
 
+  // Load pending filter mode from sessionStorage when navigating to drivers view
+  useEffect(() => {
+    if (activeSubView === 'drivers') {
+      const pending = sessionStorage.getItem('pending_filter_mode');
+      if (pending) {
+        setFilterMode(pending as any);
+        sessionStorage.removeItem('pending_filter_mode');
+        setTimeout(() => {
+          document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [activeSubView]);
+
   // Auto-expire rewards whose deadline has passed
   useEffect(() => {
     if (loading || drivers.length === 0) return;
@@ -281,6 +298,18 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     setTimeout(() => {
       setToast(null);
     }, 4000);
+  };
+  const handleStatCardClick = (mode: string) => {
+    const nextMode = filterMode === mode ? 'all' : mode;
+    if (activeSubView === 'home') {
+      sessionStorage.setItem('pending_filter_mode', nextMode);
+      window.location.hash = '#/drivers';
+    } else {
+      setFilterMode(nextMode as any);
+      setTimeout(() => {
+        document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
   };
 
   // stats calculations
@@ -733,10 +762,7 @@ ${cardsHTML}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Drivers Card */}
             <div
-              onClick={() => {
-                setFilterMode('all');
-                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => handleStatCardClick('all')}
               className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'all' || filterMode === 'active'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
@@ -756,10 +782,7 @@ ${cardsHTML}
 
             {/* Active Rewards Card */}
             <div
-              onClick={() => {
-                setFilterMode('rewards');
-                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => handleStatCardClick('rewards')}
               className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'rewards'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
@@ -775,10 +798,7 @@ ${cardsHTML}
 
             {/* Milestones Reached Card */}
             <div
-              onClick={() => {
-                setFilterMode('milestones');
-                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => handleStatCardClick('milestones')}
               className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'milestones'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
@@ -798,10 +818,7 @@ ${cardsHTML}
 
             {/* Contact Changes Card */}
             <div
-              onClick={() => {
-                setFilterMode('changed');
-                document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => handleStatCardClick('changed')}
               className={`p-3.5 px-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between h-[96px] interactive-button ${
                 filterMode === 'changed'
                   ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-900'
@@ -820,844 +837,490 @@ ${cardsHTML}
             </div>
           </div>
 
-          {/* Milestone Funnel Statistics Card */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
-              <div>
-                <h3 className="font-bold text-base text-black dark:text-white flex items-center gap-2">
-                  <span>📊</span> Milestone Funnel Statistics
-                </h3>
-                <p className="text-[11px] text-zinc-500 mt-0.5">
-                  Distribution of active fleet across reward cycle progress (click to filter list)
-                </p>
+          {/* Funnel & Leaderboard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Milestone Funnel Statistics Card */}
+            <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <div>
+                  <h3 className="font-bold text-base text-black dark:text-white flex items-center gap-2">
+                    <span>📊</span> Milestone Funnel Statistics
+                  </h3>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">
+                    Distribution of active fleet across reward cycle progress (click to filter list)
+                  </p>
+                </div>
+                <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400 font-bold px-2 py-0.5 rounded">
+                  Real-time
+                </span>
               </div>
-              <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400 font-bold px-2 py-0.5 rounded">
-                Real-time
-              </span>
-            </div>
 
-            {/* Funnel Layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-              {[
-                { 
-                  id: 'funnel_not_started', 
-                  label: 'Not Started', 
-                  description: 'No active reward tracking',
-                  count: funnelStats.notStarted, 
-                  percentage: funnelStats.notStartedPct,
-                  barColor: 'bg-zinc-300 dark:bg-zinc-700',
-                  textColor: 'text-zinc-600 dark:text-zinc-400',
-                  icon: '💤'
-                },
-                { 
-                  id: 'funnel_active_under_10', 
-                  label: 'Active (0-9 Trips)', 
-                  description: 'Started cycle, under 10 trips',
-                  count: funnelStats.activeUnder10, 
-                  percentage: funnelStats.activeUnder10Pct,
-                  barColor: 'bg-blue-200 dark:bg-blue-900/60',
-                  textColor: 'text-blue-600 dark:text-blue-400',
-                  icon: '⏳'
-                },
-                { 
-                  id: 'funnel_active_silver', 
-                  label: 'Active Silver (10+)', 
-                  description: 'F10 reached & in progress',
-                  count: funnelStats.activeSilver, 
-                  percentage: funnelStats.activeSilverPct,
-                  barColor: 'bg-amber-300 dark:bg-amber-800/60',
-                  textColor: 'text-amber-700 dark:text-amber-400',
-                  icon: '🔥'
-                },
-                { 
-                  id: 'funnel_active_gold', 
-                  label: 'Active Gold (50+)', 
-                  description: 'F50 reached & near target',
-                  count: funnelStats.activeGold, 
-                  percentage: funnelStats.activeGoldPct,
-                  barColor: 'bg-red-300 dark:bg-red-900/40',
-                  textColor: 'text-red-600 dark:text-red-400',
-                  icon: '⚡'
-                },
-                { 
-                  id: 'funnel_completed', 
-                  label: 'Completed', 
-                  description: 'Fully completed target',
-                  count: funnelStats.completed, 
-                  percentage: funnelStats.completedPct,
-                  barColor: 'bg-emerald-400 dark:bg-emerald-800/60',
-                  textColor: 'text-emerald-700 dark:text-emerald-400',
-                  icon: '🎉'
-                }
-              ].map((step) => {
-                const isSelected = filterMode === step.id;
-                return (
-                  <div 
-                    key={step.id}
-                    onClick={() => {
-                      setFilterMode(filterMode === step.id ? 'all' : step.id as any);
-                      document.getElementById('drivers-list-section')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className={`group relative flex flex-col justify-between p-3.5 rounded-xl border transition-all cursor-pointer select-none overflow-hidden h-[96px] ${
-                      isSelected 
-                        ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-800/45' 
-                        : 'border-zinc-150 hover:border-zinc-300 dark:border-zinc-850/40 dark:hover:border-zinc-700 bg-zinc-50/10 dark:bg-zinc-900/20'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start z-10 relative">
-                      <span className="text-sm shrink-0">{step.icon}</span>
-                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-zinc-850 shadow-2xs font-mono ${step.textColor}`}>
-                        {step.percentage}%
-                      </span>
-                    </div>
-
-                    <div className="z-10 relative mt-2 text-left">
-                      <div className="flex items-center gap-1.5 leading-none">
-                        <span className="text-[11px] font-black text-black dark:text-white leading-none">
-                          {step.label}
-                        </span>
-                        {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
-                        )}
-                      </div>
-                      <span className="text-[10px] font-bold text-zinc-500 font-mono block mt-1">
-                        {step.count} {step.count === 1 ? 'driver' : 'drivers'}
-                      </span>
-                    </div>
-
-                    {/* Funnel Progress Background Bar */}
+              {/* Funnel Layout */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                {[
+                  { 
+                    id: 'funnel_not_started', 
+                    label: 'Not Started', 
+                    description: 'No active reward tracking',
+                    count: funnelStats.notStarted, 
+                    percentage: funnelStats.notStartedPct,
+                    barColor: 'bg-zinc-300 dark:bg-zinc-700',
+                    textColor: 'text-zinc-600 dark:text-zinc-400',
+                    icon: '💤'
+                  },
+                  { 
+                    id: 'funnel_active_under_10', 
+                    label: 'Active (0-9 Trips)', 
+                    description: 'Started cycle, under 10 trips',
+                    count: funnelStats.activeUnder10, 
+                    percentage: funnelStats.activeUnder10Pct,
+                    barColor: 'bg-blue-200 dark:bg-blue-900/60',
+                    textColor: 'text-blue-600 dark:text-blue-400',
+                    icon: '⏳'
+                  },
+                  { 
+                    id: 'funnel_active_silver', 
+                    label: 'Active Silver (10+)', 
+                    description: 'F10 reached & in progress',
+                    count: funnelStats.activeSilver, 
+                    percentage: funnelStats.activeSilverPct,
+                    barColor: 'bg-amber-300 dark:bg-amber-800/60',
+                    textColor: 'text-amber-700 dark:text-amber-400',
+                    icon: '🔥'
+                  },
+                  { 
+                    id: 'funnel_active_gold', 
+                    label: 'Active Gold (50+)', 
+                    description: 'F50 reached & near target',
+                    count: funnelStats.activeGold, 
+                    percentage: funnelStats.activeGoldPct,
+                    barColor: 'bg-red-300 dark:bg-red-900/40',
+                    textColor: 'text-red-600 dark:text-red-400',
+                    icon: '⚡'
+                  },
+                  { 
+                    id: 'funnel_completed', 
+                    label: 'Completed', 
+                    description: 'Fully completed target',
+                    count: funnelStats.completed, 
+                    percentage: funnelStats.completedPct,
+                    barColor: 'bg-emerald-400 dark:bg-emerald-800/60',
+                    textColor: 'text-emerald-700 dark:text-emerald-400',
+                    icon: '🎉'
+                  }
+                ].map((step) => {
+                  const isSelected = filterMode === step.id;
+                  return (
                     <div 
-                      className={`absolute left-0 bottom-0 top-0 ${step.barColor} opacity-15 dark:opacity-20 transition-all duration-500`} 
-                      style={{ width: `${step.percentage}%` }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                      key={step.id}
+                      onClick={() => handleStatCardClick(step.id)}
+                      className={`group relative flex flex-col justify-between p-3.5 rounded-xl border transition-all cursor-pointer select-none overflow-hidden h-[96px] ${
+                        isSelected 
+                          ? 'border-black bg-zinc-50 dark:border-white dark:bg-zinc-800/45' 
+                          : 'border-zinc-150 hover:border-zinc-300 dark:border-zinc-800/40 dark:hover:border-zinc-700 bg-zinc-50/10 dark:bg-zinc-900/20'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start z-10 relative">
+                        <span className="text-sm shrink-0">{step.icon}</span>
+                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md bg-white/90 dark:bg-zinc-850 shadow-2xs font-mono ${step.textColor}`}>
+                          {step.percentage}%
+                        </span>
+                      </div>
 
-          {/* Toolbar */}
-          <div id="drivers-list-section" className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
-              {/* Search bar */}
-              <div className="relative flex-1 max-w-md">
-                <Search size={14} className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Search drivers by name, UUID, phone, email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl p-2.5 pl-9.5 text-xs font-semibold focus:ring-1 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white"
-                />
+                      <div className="z-10 relative mt-2 text-left">
+                        <div className="flex items-center gap-1.5 leading-none">
+                          <span className="text-[11px] font-black text-black dark:text-white leading-none">
+                            {step.label}
+                          </span>
+                          {isSelected && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-pulse" />
+                          )}
+                        </div>
+                        <span className="text-[10px] font-bold text-zinc-500 font-mono block mt-1">
+                          {step.count} {step.count === 1 ? 'driver' : 'drivers'}
+                        </span>
+                      </div>
+
+                      {/* Funnel Progress Background Bar */}
+                      <div 
+                        className={`absolute left-0 bottom-0 top-0 ${step.barColor} opacity-15 dark:opacity-20 transition-all duration-500`} 
+                        style={{ width: `${step.percentage}%` }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Filter pills & Sort options */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl overflow-x-auto no-scrollbar max-w-full shrink-0">
-                <button
-                  onClick={() => setFilterMode('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    filterMode === 'all'
-                      ? 'bg-white dark:bg-zinc-800 text-black dark:text-white shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200'
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setFilterMode('f10')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    filterMode === 'f10'
-                      ? 'bg-white dark:bg-zinc-800 text-black dark:text-white shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200'
-                  }`}
-                >
-                  F10
-                </button>
-                <button
-                  onClick={() => setFilterMode('f50')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    filterMode === 'f50'
-                      ? 'bg-white dark:bg-zinc-800 text-black dark:text-white shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-200'
-                  }`}
-                >
-                  F50
-                </button>
-                {filterMode.startsWith('funnel_') && (
-                  <button
-                    onClick={() => setFilterMode('all')}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-black text-white dark:bg-white dark:text-black shadow-xs shrink-0 flex items-center gap-1.5 ml-1"
-                  >
-                    <span>
-                      Funnel: {
-                        filterMode === 'funnel_not_started' ? 'Not Started' :
-                        filterMode === 'funnel_active_under_10' ? 'Active (<10)' :
-                        filterMode === 'funnel_active_silver' ? 'Silver (10+)' :
-                        filterMode === 'funnel_active_gold' ? 'Gold (50+)' :
-                        'Completed'
-                      }
-                    </span>
-                    <span className="text-[10px]">✕</span>
-                  </button>
-                )}
-              </div>
+            {/* Fleet Trip Leaderboard Card */}
+            {(() => {
+              const leaderboardDrivers = [...drivers]
+                .filter(d => !d.deleted)
+                .sort((a, b) => b.tip_count - a.tip_count)
+                .slice(0, 3);
+              const trophies = ["🥇", "🥈", "🥉"];
+              const badgeColors = [
+                "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-350 border border-amber-200/60 dark:border-amber-900/30",
+                "bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border border-zinc-250/60 dark:border-zinc-700/60",
+                "bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-350 border border-orange-200/60 dark:border-orange-900/30"
+              ];
+              return (
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-4">
+                      <h3 className="font-bold text-[13px] uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+                        <span>🏆</span> Fleet Leaderboard
+                      </h3>
+                      <span className="text-[10px] text-zinc-500 font-bold font-mono">Top Trips</span>
+                    </div>
 
-              {/* Sort Options */}
-              <select
-                value={sortBy}
-                onChange={(e: any) => setSortBy(e.target.value)}
-                className="bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white border-none rounded-xl p-2.5 px-3 text-xs font-bold focus:ring-1 focus:ring-black outline-none cursor-pointer"
-              >
-                <option value="trips_desc">Sort: High Trips</option>
-                <option value="trips_asc">Sort: Low Trips</option>
-                <option value="name_asc">Sort: Name (A-Z)</option>
-                <option value="newest_desc">Sort: Newest Synced</option>
-              </select>
-            </div>
-          </div>
-
-          {/* High Density Drivers Data Table */}
-          <div className="hidden md:block overflow-x-auto border border-zinc-150 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 shadow-xs">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-150 dark:border-zinc-800 text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider select-none">
-                  <th className="w-10 text-center py-3.5">
-                    <input
-                      type="checkbox"
-                      checked={paginatedDrivers.length > 0 && paginatedDrivers.every(d => selectedIds.has(d.uuid))}
-                      onChange={() => handleSelectAll(paginatedDrivers)}
-                      className="w-4 h-4 rounded border-zinc-300 text-black accent-black cursor-pointer"
-                    />
-                  </th>
-                  <th className="py-3.5 font-bold">Driver Info</th>
-                  <th className="py-3.5 font-bold">Trips</th>
-                  <th className="py-3.5 font-bold">Contact Info</th>
-                  <th className="py-3.5 font-bold">Reward Cycles Status</th>
-                  <th className="py-3.5 font-bold">Milestone Payout Approval</th>
-                  <th className="py-3.5 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900 text-[13px]">
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-zinc-400">
-                      <RefreshCw className="animate-spin text-zinc-500 mx-auto mb-2" size={24} />
-                      <span>Loading drivers database...</span>
-                    </td>
-                  </tr>
-                ) : paginatedDrivers.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-zinc-400">
-                      <p className="text-sm font-bold text-black dark:text-white">No Drivers Found</p>
-                      <p className="text-xs text-zinc-500 mt-1">Try resetting filters or sync your Uber supplier portal.</p>
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedDrivers.map((drv) => {
-                    const isSelected = selectedIds.has(drv.uuid);
-                    return (
-                      <tr 
-                        key={drv.uuid} 
-                        className={`hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20 transition ${
-                          drv.deleted ? 'bg-red-50/10 dark:bg-red-950/5' : ''
-                        } ${isSelected ? 'bg-zinc-50/60 dark:bg-zinc-900/10' : ''}`}
-                      >
-                        {/* Checkbox */}
-                        <td className="text-center py-4">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggleRow(drv.uuid)}
-                            className="w-4 h-4 rounded border-zinc-300 text-black accent-black cursor-pointer"
-                          />
-                        </td>
-
-                        {/* Driver Info */}
-                        <td className="py-4">
+                    {leaderboardDrivers.length === 0 ? (
+                      <div className="py-12 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                        No active drivers found.
+                      </div>
+                    ) : (
+                      <div className="space-y-3.5">
+                        {leaderboardDrivers.map((drv, idx) => (
                           <div 
+                            key={drv.uuid}
                             onClick={() => {
                               setCurrentDriverDetail(drv);
                               setDetailTab('info');
-                              onNavigate('drivers');
+                              window.location.hash = '#/drivers';
                             }}
-                            className="flex items-center gap-3 cursor-pointer group"
+                            className="flex items-center justify-between p-2 hover:bg-zinc-50 dark:hover:bg-zinc-950 rounded-xl transition cursor-pointer group"
                           >
-                            <Avatar 
-                              photoUrl={drv.photo_url} 
-                              name={drv.name} 
-                              size={40} 
-                              className="rounded-full border border-zinc-200 object-cover bg-zinc-100 shadow-xs shrink-0 group-hover:border-zinc-400 transition" 
-                            />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-extrabold text-[14px] text-black dark:text-white uppercase tracking-tight leading-tight group-hover:underline">
-                                {drv.name || "UNNAMED DRIVER"}
-                              </span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate max-w-[145px]")}>
-                                  {drv.uuid}
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="text-lg shrink-0">{trophies[idx]}</span>
+                              <Avatar photoUrl={drv.photo_url} name={drv.name} size={30} className="bg-zinc-150 border border-white dark:border-zinc-850 shrink-0" />
+                              <div className="min-w-0">
+                                <div className="font-extrabold text-[12px] text-black dark:text-white truncate uppercase tracking-tight group-hover:underline">
+                                  {drv.name}
+                                </div>
+                                <span className={`inline-flex text-[8.5px] font-black uppercase px-1 rounded mt-0.5 ${badgeColors[idx]}`}>
+                                  {idx === 0 ? "1st Place" : idx === 1 ? "2nd Place" : "3rd Place"}
                                 </span>
-                                {drv.status && (
-                                  <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none ${
-                                    drv.status === 'Active' ? 'text-emerald-600 dark:text-emerald-400' :
-                                    drv.status === 'Applied' ? 'text-blue-500 dark:text-blue-400' :
-                                    drv.status === 'Waitlisted' ? 'text-amber-500 dark:text-amber-400' :
-                                    'text-red-500 dark:text-red-400'
-                                  }`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${
-                                      drv.status === 'Active' ? 'bg-emerald-500 animate-pulse' :
-                                      drv.status === 'Applied' ? 'bg-blue-500' :
-                                      drv.status === 'Waitlisted' ? 'bg-amber-500' :
-                                      'bg-red-500'
-                                    }`} />
-                                    {drv.status}
-                                  </span>
-                                )}
-                                {drv.flow && (
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700/80">
-                                    {drv.flow}
-                                  </span>
-                                )}
                               </div>
                             </div>
-                          </div>
-                        </td>
-
-                        {/* Trips */}
-                        <td className="py-4 font-mono font-bold text-black dark:text-white">
-                          {drv.tip_count}
-                        </td>
-
-                        {/* Contact Info */}
-                        <td className="py-4">
-                          <div className="flex flex-col gap-2">
-                            {/* Phone */}
-                            <div>
-                              {drv.old_phone && drv.old_phone !== drv.phone ? (
-                                <div className="flex flex-col">
-                                  <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 font-mono text-[11.5px] font-bold inline-flex items-center gap-1 select-all w-max")}>
-                                    <AlertTriangle size={10} className="text-amber-600 shrink-0" />
-                                    {drv.phone}
-                                  </span>
-                                  <span className={shieldClass("line-through text-zinc-400 dark:text-zinc-650 text-[10.5px] font-mono font-medium block mt-0.5 pl-1.5")}>
-                                    Old: {drv.old_phone}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className={shieldClass("text-[12px] font-mono font-bold text-zinc-800 dark:text-zinc-200 select-all")}>
-                                  {drv.phone || "—"}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Email */}
-                            <div>
-                              {drv.old_email && drv.old_email !== drv.email ? (
-                                <div className="flex flex-col">
-                                  <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 text-[11.5px] font-bold inline-flex items-center gap-1 select-all max-w-[180px] truncate w-max")}>
-                                    <AlertTriangle size={10} className="text-amber-600 shrink-0" />
-                                    {drv.email}
-                                  </span>
-                                  <span className={shieldClass("line-through text-zinc-400 dark:text-zinc-500 text-[10.5px] font-medium block mt-0.5 pl-1.5 truncate max-w-[180px]")}>
-                                    Old: {drv.old_email}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className={shieldClass("text-[12px] font-medium text-zinc-600 dark:text-zinc-400 select-all truncate max-w-[180px] block")}>
-                                  {drv.email || "—"}
-                                </span>
-                              )}
+                            <div className="text-right shrink-0">
+                              <div className="text-[13px] font-black text-black dark:text-white font-mono leading-none">
+                                {drv.tip_count}
+                              </div>
+                              <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">Trips</span>
                             </div>
                           </div>
-                        </td>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-                        {/* Reward Cycles Status */}
-                        <td className="py-4">
-                          {!drv.reward || !drv.reward.active ? (
-                            <button
-                              onClick={() => {
-                                setRewardTrackingDriver(drv);
-                                setRewardCycleInput(52);
-                                setRewardExpiryInput(getGlobalSettings().default_expiry_days || 0);
-                              }}
-                              className="interactive-button px-3 py-1.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[11px] font-bold rounded-lg flex items-center gap-1 shadow-xs cursor-pointer select-none w-max"
-                            >
-                              <span>▶ Start Reward</span>
-                            </button>
-                          ) : drv.reward.expired ? (
-                            <div className="flex flex-col gap-1 select-none">
-                              <span className="bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-350 border border-red-200 dark:border-red-900/60 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 w-max">
-                                <span>❌ Expired</span>
-                              </span>
-                              <span className="text-[9px] text-zinc-400 font-bold pl-1 uppercase font-mono tracking-wider">
-                                Deadline passed
-                              </span>
-                            </div>
-                          ) : drv.reward.completed ? (
-                            <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 w-max select-none">
-                              <span>🎉 Reward Complete!</span>
+                  <button 
+                    onClick={() => {
+                      window.location.hash = '#/drivers';
+                    }}
+                    className="w-full mt-4 py-2 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900/40 dark:hover:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl text-xs font-bold text-black dark:text-white transition flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <span>View Roster</span>
+                    <span>➡️</span>
+                  </button>
+                </div>
+              );
+            })()}
+
+          </div>
+            
+          {/* Dashboard Insights Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+            
+            {/* Widget 1: Fleet Activity Logs */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-4">
+                  <h4 className="font-bold text-[13px] uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+                    <span>📈</span> Fleet Activity Logs
+                  </h4>
+                  <span className="text-[10px] text-zinc-500 font-bold font-mono">Last 5 Syncs</span>
+                </div>
+
+                {dailyLogs.length === 0 ? (
+                  <div className="py-8 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    No sync activity logs found.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Visual Bar Chart */}
+                    <div className="h-28 flex items-end justify-between gap-4 px-2 pt-4 border-b border-zinc-100 dark:border-zinc-850 pb-2">
+                      {[...dailyLogs].slice(0, 5).reverse().map((log, idx) => {
+                        const ratio = log.total_drivers > 0 ? (log.active_drivers / log.total_drivers) : 0;
+                        const pct = Math.round(ratio * 100);
+                        return (
+                          <div key={log.id || idx} className="flex-1 flex flex-col items-center gap-1 group relative">
+                            {/* Tooltip */}
+                            <span className="absolute -top-6 text-[9px] font-black font-mono bg-black dark:bg-white text-white dark:text-black px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xs">
+                              {log.active_drivers}/{log.total_drivers} Active ({pct}%)
                             </span>
-                          ) : (
-                            <div className="flex flex-col gap-1 select-none">
-                              {drv.reward.trips_remaining <= 5 ? (
-                                <span className="bg-red-50 dark:bg-red-950/40 text-red-650 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-[11.5px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 w-max animate-pulse">
-                                  <span>⚡ {drv.reward.trips_remaining} trips left</span>
-                                </span>
-                              ) : drv.reward.trips_remaining <= 20 ? (
-                                <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 text-[11.5px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 w-max">
-                                  <span>🔥 {drv.reward.trips_remaining} trips left</span>
-                                </span>
-                              ) : (
-                                <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-350 border border-transparent text-[11.5px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 w-max">
-                                  <span>⏳ {drv.reward.trips_remaining} trips left</span>
-                                </span>
-                              )}
-                              <span className="text-[9px] text-zinc-400 font-bold pl-1 uppercase font-mono tracking-wider">
-                                target: {drv.reward.next_reward_at} trips
-                              </span>
-                              {drv.reward.expires_at && (
-                                <span className="text-[9px] text-amber-600 dark:text-amber-500 font-bold pl-1 uppercase font-mono tracking-wider">
-                                  {getExpiryText(drv.reward.expires_at)}
-                                </span>
-                              )}
+                            {/* Bar */}
+                            <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-t-sm h-20 flex items-end overflow-hidden">
+                              <div 
+                                className="w-full bg-black dark:bg-white transition-all duration-750" 
+                                style={{ height: `${Math.max(10, pct)}%` }}
+                              />
                             </div>
-                          )}
-                        </td>
-
-                        {/* Milestone Payout Action */}
-                        <td className="py-4">
-                          {(() => {
-                            if (!drv.reward || !drv.reward.active) return <span className="text-zinc-400 font-bold">—</span>;
-                            const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
-                            const hasF10 = currentCycleTrips >= 10 && !drv.reward.f10_done;
-                            const hasF50 = currentCycleTrips >= 50 && !drv.reward.f50_done;
-
-                            if (!hasF10 && !hasF50) return <span className="text-zinc-400 font-bold">—</span>;
-
-                            return (
-                              <div className="flex flex-col gap-1.5 select-none">
-                                {hasF10 && (
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        await dismissRewardMilestone(drv.uuid, 'f10');
-                                        showToast("success", `F10 Milestone payout approved for ${drv.name}`);
-                                      } catch (err) {
-                                        showToast("error", "Milestone payout approval failed.");
-                                      }
-                                    }}
-                                    className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10px] font-bold rounded-full shadow-xs cursor-pointer flex items-center gap-0.5 justify-center w-max uppercase tracking-wider"
-                                  >
-                                    <span>Done F10</span>
-                                  </button>
-                                )}
-                                {hasF50 && (
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        await dismissRewardMilestone(drv.uuid, 'f50');
-                                        showToast("success", `F50 Milestone payout approved for ${drv.name}`);
-                                      } catch (err) {
-                                        showToast("error", "Milestone payout approval failed.");
-                                      }
-                                    }}
-                                    className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10px] font-bold rounded-full shadow-xs cursor-pointer flex items-center gap-0.5 justify-center w-max uppercase tracking-wider"
-                                  >
-                                    <span>Done F50</span>
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-4 text-right">
-                          <div className="flex items-center gap-1.5 justify-end">
-                            {/* Dismiss Contact Warning */}
-                            {drv.has_contact_change && (
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    await dismissChangeFlag(drv.uuid);
-                                    showToast("success", `Approved contact changes for ${drv.name}`);
-                                  } catch (_) {
-                                    showToast("error", "Failed approving contact changes.");
-                                  }
-                                }}
-                                className="interactive-button w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 dark:text-emerald-300 flex items-center justify-center cursor-pointer"
-                                title="Approve Contact Change"
-                              >
-                                <Check size={14} className="stroke-[2.5]" />
-                              </button>
-                            )}
-
-                            {/* Reset active reward */}
-                            {drv.reward && drv.reward.active && (
-                              <button
-                                onClick={() => setResetConfirmationDriver(drv)}
-                                className="interactive-button w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-350 flex items-center justify-center cursor-pointer"
-                                title="Reset Reward tracking"
-                              >
-                                <RefreshCw size={14} className="stroke-[2.5]" />
-                              </button>
-                            )}
-
-                            {/* Edit Details */}
-                            <button
-                              onClick={() => setEditingDriver(drv)}
-                              className="interactive-button w-8 h-8 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-350 flex items-center justify-center cursor-pointer"
-                              title="Edit Details"
-                            >
-                              <Edit2 size={14} className="stroke-[2.5]" />
-                            </button>
-
-                            {/* Delete Details */}
-                            <button
-                              onClick={() => setDeletingDriver(drv)}
-                              className={`interactive-button w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer ${
-                                drv.deleted 
-                                  ? 'bg-red-50 text-red-750 dark:bg-red-950/20 dark:text-red-300 hover:bg-red-100' 
-                                  : 'bg-zinc-100 hover:bg-red-50 hover:text-red-750 dark:bg-zinc-900 dark:hover:bg-red-950/20 dark:text-zinc-300'
-                              }`}
-                              title={drv.deleted ? "Deleted (Click to hard delete)" : "Delete Driver"}
-                            >
-                              <Trash2 size={14} className="stroke-[2.5]" />
-                            </button>
-
-                            {/* If soft-deleted, show restore button */}
-                            {drv.deleted && (
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    await restoreDriver(drv.uuid);
-                                    showToast("success", `Restored ${drv.name} from soft deletion.`);
-                                  } catch (_) {
-                                    showToast("error", "Failed restoring driver.");
-                                  }
-                                }}
-                                className="interactive-button px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-black rounded-lg text-[10px] font-bold cursor-pointer"
-                                title="Restore Driver"
-                              >
-                                Restore
-                              </button>
-                            )}
+                            {/* Label */}
+                            <span className="text-[9px] font-extrabold text-zinc-450 truncate max-w-full font-mono mt-1">
+                              {new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </span>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                        );
+                      })}
+                    </div>
+
+                    {/* Logs List */}
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs font-medium">
+                      {[...dailyLogs].slice(0, 4).map((log, idx) => (
+                        <div key={log.id || idx} className="py-2.5 flex items-center justify-between">
+                          <span className="font-bold text-zinc-650 dark:text-zinc-350">
+                            {new Date(log.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                          <div className="flex items-center gap-3 font-mono text-[11px]">
+                            <span className="text-zinc-400">
+                              Active: <strong className="text-black dark:text-white">{log.active_drivers}</strong>/{log.total_drivers}
+                            </span>
+                            <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300 px-2 py-0.5 rounded font-bold">
+                              🏆 {log.completed_cycles} done
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </tbody>
-            </table>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  window.location.hash = '#/banking';
+                }}
+                className="w-full mt-4 py-2 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900/40 dark:hover:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl text-xs font-bold text-black dark:text-white transition flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>View Full Synchronization Logs</span>
+                <span>➡️</span>
+              </button>
+            </div>
+
+            {/* Widget 2: Recent Scraped Payouts */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-4">
+                  <h4 className="font-bold text-[13px] uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+                    <span>💵</span> Live Partner Payout Logs
+                  </h4>
+                  <span className="text-[10px] text-zinc-500 font-bold font-mono">Real-time Ingestion</span>
+                </div>
+
+                {scrapedPayouts.length === 0 ? (
+                  <div className="py-12 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    No payouts ingested from Uber portal.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                    {[...scrapedPayouts].slice(0, 5).map((pay) => (
+                      <div key={pay.trip_id} className="py-3 flex items-center justify-between text-xs">
+                        <div className="min-w-0">
+                          <div className="font-bold text-black dark:text-white truncate max-w-[150px]">
+                            {pay.driver_name}
+                          </div>
+                          <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate max-w-[120px]">
+                            ID: {pay.trip_id}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 text-right">
+                          <span className="font-black font-mono text-[13px] text-black dark:text-white">
+                            ${pay.amount.toFixed(2)}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            pay.status === 'claimed' 
+                              ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350' 
+                              : 'bg-black dark:bg-white text-white dark:text-black font-black'
+                          }`}>
+                            {pay.status === 'claimed' ? 'Attributed' : 'Ingested'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button 
+                onClick={() => {
+                  window.location.hash = '#/banking';
+                }}
+                className="w-full mt-4 py-2 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900/40 dark:hover:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl text-xs font-bold text-black dark:text-white transition flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>Navigate to Banking Dashboard</span>
+                <span>➡️</span>
+              </button>
+            </div>
           </div>
 
-          {/* Mobile Driver Cards List */}
-          <div className="block md:hidden space-y-4">
-            {loading ? (
-              <div className="py-12 flex flex-col items-center justify-center text-zinc-400 space-y-2">
-                <RefreshCw className="animate-spin text-zinc-500 mx-auto mb-2" size={24} />
-                <span>Loading drivers database...</span>
+          {/* Widget 3: Milestone Operations Alert Queue */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+              <div>
+                <h3 className="font-bold text-[13px] uppercase tracking-wider text-black dark:text-white flex items-center gap-2">
+                  <span>🚨</span> Fleet Attention Alert Queue
+                </h3>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  Actionable items requiring admin verification or updates
+                </p>
               </div>
-            ) : paginatedDrivers.length === 0 ? (
-              <div className="py-12 text-center text-zinc-400 space-y-2 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-                <p className="text-sm font-bold text-black dark:text-white">No Drivers Found</p>
-                <p className="text-xs text-zinc-500 max-w-[220px] mx-auto">Try clearing search filters or add a new driver profile.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {paginatedDrivers.map((drv) => {
-                  const isSelected = selectedIds.has(drv.uuid);
-                  return (
-                    <div 
-                      key={drv.uuid}
-                      onClick={() => {
-                        setCurrentDriverDetail(drv);
-                        setDetailTab('info');
-                        onNavigate('drivers');
-                      }}
-                      className={`bg-white dark:bg-zinc-900 border rounded-2xl p-5 shadow-xs transition-all cursor-pointer relative interactive-button flex flex-col gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 ${
-                        drv.has_contact_change ? 'border-amber-200 bg-amber-50/10 dark:bg-amber-950/10' : 'border-zinc-150 dark:border-zinc-800'
-                      } ${isSelected ? 'ring-1 ring-black dark:ring-white bg-zinc-50/40 dark:bg-zinc-900/10' : ''}`}
-                    >
-                      {/* Avatar, Selection Checkbox, Name Header */}
-                      <div className="flex items-center gap-3.5 justify-between">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleToggleRow(drv.uuid)}
-                              className="w-4 h-4 rounded border-zinc-300 text-black accent-black cursor-pointer"
-                            />
-                          </div>
-                          <Avatar 
-                            photoUrl={drv.photo_url} 
-                            name={drv.name} 
-                            size={44}
-                            className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 object-cover rounded-full"
-                          />
-                          <div className="min-w-0">
-                            <h3 className="font-extrabold text-[15px] text-black dark:text-white tracking-tight leading-tight truncate uppercase">
-                              {drv.name || "UNNAMED DRIVER"}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className={shieldClass("text-[9.5px] text-zinc-400 font-mono tracking-wider truncate block max-w-[130px]")}>
-                                {drv.uuid}
-                              </span>
-                              {drv.status && (
-                                <span className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none ${
-                                  drv.status === 'Active' ? 'text-emerald-600 dark:text-emerald-400' :
-                                  drv.status === 'Applied' ? 'text-blue-500 dark:text-blue-400' :
-                                  drv.status === 'Waitlisted' ? 'text-amber-500 dark:text-amber-400' :
-                                  'text-red-500 dark:text-red-400'
-                                }`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${
-                                    drv.status === 'Active' ? 'bg-emerald-500 animate-pulse' :
-                                    drv.status === 'Applied' ? 'bg-blue-500' :
-                                    drv.status === 'Waitlisted' ? 'bg-amber-500' :
-                                    'bg-red-500'
-                                  }`} />
-                                  {drv.status}
-                                </span>
-                              )}
-                              {drv.flow && (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase select-none bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700/80">
-                                  {drv.flow}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+              <span className="text-[10px] bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 font-extrabold px-2.5 py-0.5 rounded-full animate-pulse">
+                Action Required
+              </span>
+            </div>
 
-                      {/* Details Grid */}
-                      <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 dark:border-zinc-800 pt-3.5 text-xs">
-                        {/* Contact Info */}
-                        <div className="space-y-2">
-                          <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">Contact</span>
-                          <div className="space-y-1">
-                            {drv.old_phone && drv.old_phone !== drv.phone ? (
-                              <div className="flex flex-col">
-                                <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 font-mono text-[11px] font-bold w-max")}>
-                                  {drv.phone}
-                                </span>
-                                <span className={shieldClass("line-through text-zinc-400 text-[9.5px] font-mono mt-0.5 pl-0.5")}>
-                                  Old: {drv.old_phone}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className={shieldClass("text-[12px] font-mono font-bold text-zinc-800 dark:text-zinc-200 select-all")}>
-                                {drv.phone || "—"}
-                              </div>
-                            )}
+            {(() => {
+              // Filter drivers needing attention
+              const alertDrivers = drivers.filter(d => {
+                if (d.deleted) return false;
+                const currentCycleTrips = d.reward?.active ? (d.tip_count - d.reward.start_tip_count) : 0;
+                const pendingF10 = d.reward?.active && currentCycleTrips >= 10 && !d.reward.f10_done;
+                const pendingF50 = d.reward?.active && currentCycleTrips >= 50 && !d.reward.f50_done;
+                const expiringSoon = d.reward?.active && !d.reward.completed && d.reward.expires_at && (
+                  (new Date(d.reward.expires_at).getTime() - Date.now()) <= (5 * 24 * 60 * 60 * 1000)
+                );
+                return d.has_contact_change || pendingF10 || pendingF50 || expiringSoon || d.reward?.expired;
+              });
 
-                            {drv.old_email && drv.old_email !== drv.email ? (
-                              <div className="flex flex-col">
-                                <span className={shieldClass("bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 rounded p-0.5 px-1.5 text-[11px] font-bold truncate max-w-[120px] w-max")}>
-                                  {drv.email}
-                                </span>
-                                <span className={shieldClass("line-through text-zinc-400 text-[9.5px] mt-0.5 pl-0.5 truncate max-w-[120px]")}>
-                                  Old: {drv.old_email}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className={shieldClass("text-[11.5px] font-medium text-zinc-600 dark:text-zinc-400 select-all truncate max-w-[120px]")}>
-                                {drv.email || "—"}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+              if (alertDrivers.length === 0) {
+                return (
+                  <div className="py-10 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    🎉 Excellent! No drivers require attention or updates at this time.
+                  </div>
+                );
+              }
 
-                        {/* Trips */}
-                        <div className="space-y-2">
+              return (
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 max-h-[360px] overflow-y-auto pr-2 no-scrollbar">
+                  {alertDrivers.map((drv) => {
+                    const currentCycleTrips = drv.reward?.active ? (drv.tip_count - drv.reward.start_tip_count) : 0;
+                    const pendingF10 = drv.reward?.active && currentCycleTrips >= 10 && !drv.reward.f10_done;
+                    const pendingF50 = drv.reward?.active && currentCycleTrips >= 50 && !drv.reward.f50_done;
+                    const expiringSoon = drv.reward?.active && !drv.reward.completed && drv.reward.expires_at && (
+                      (new Date(drv.reward.expires_at).getTime() - Date.now()) <= (5 * 24 * 60 * 60 * 1000)
+                    );
+
+                    return (
+                      <div key={drv.uuid} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <Avatar photoUrl={drv.photo_url} name={drv.name} size={36} className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-150" />
                           <div>
-                            <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-0.5">Total Trips</span>
-                            <span className="text-[13px] font-mono font-bold text-black dark:text-white bg-zinc-50 dark:bg-zinc-800 border border-zinc-150 dark:border-zinc-800 rounded p-0.5 px-1.5">
-                              {drv.tip_count}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Reward Cycle Status & Milestone Payout Approval */}
-                      <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 dark:border-zinc-800 pt-3 text-xs" onClick={(e) => e.stopPropagation()}>
-                        {/* Reward Cycle Status */}
-                        <div>
-                          <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Reward Cycle</span>
-                          {!drv.reward || !drv.reward.active ? (
-                            <button
+                            <span 
                               onClick={() => {
-                                setRewardTrackingDriver(drv);
-                                setRewardCycleInput(52);
+                                setCurrentDriverDetail(drv);
+                                setDetailTab('info');
+                                window.location.hash = '#/drivers';
                               }}
-                              className="interactive-button px-2.5 py-1 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10px] font-bold rounded-full flex items-center gap-1 shadow-xs cursor-pointer select-none"
+                              className="font-extrabold text-[13px] text-black dark:text-white hover:underline cursor-pointer uppercase tracking-tight"
                             >
-                              <span>▶ Start</span>
-                            </button>
-                          ) : drv.reward.completed ? (
-                            <span className="bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold px-2 py-0.5 rounded-full w-max">
-                              <span>🎉 Complete!</span>
+                              {drv.name}
                             </span>
-                          ) : (
-                            <div className="flex flex-col gap-0.5">
-                              {drv.reward.trips_remaining <= 5 ? (
-                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-300 dark:border-zinc-700 text-[10.5px] font-bold px-2 py-0.5 rounded-full w-max animate-pulse">
-                                  {drv.reward.trips_remaining} left
-                                </span>
-                              ) : drv.reward.trips_remaining <= 20 ? (
-                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 text-[10.5px] font-bold px-2 py-0.5 rounded-full w-max">
-                                  {drv.reward.trips_remaining} left
-                                </span>
-                              ) : (
-                                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-350 border border-transparent text-[10.5px] font-bold px-2 py-0.5 rounded-full w-max">
-                                  {drv.reward.trips_remaining} left
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              {drv.has_contact_change && (
+                                <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                                  ⚠️ Phone/Email Mismatch
                                 </span>
                               )}
-                              <span className="text-[8px] text-zinc-400 font-bold font-mono tracking-wider pl-0.5">
-                                TARGET: {drv.reward.next_reward_at}
-                              </span>
+                              {pendingF10 && (
+                                <span className="bg-blue-50 dark:bg-blue-950/20 text-blue-650 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded animate-pulse">
+                                  🔔 F10 Reached
+                                </span>
+                              )}
+                              {pendingF50 && (
+                                <span className="bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-300 text-[10px] font-bold px-2 py-0.5 rounded animate-pulse">
+                                  🔔 F50 Reached
+                                </span>
+                              )}
+                              {drv.reward?.expired && (
+                                <span className="bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-350 text-[10px] font-bold px-2 py-0.5 rounded">
+                                  ❌ Expired
+                                </span>
+                              )}
+                              {expiringSoon && !drv.reward?.expired && (
+                                <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                                  ⏰ Expiry: {getExpiryText(drv.reward?.expires_at)}
+                                </span>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
 
-                        {/* Milestone Payout Approval */}
-                        <div>
-                          <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">Milestones</span>
-                          {(() => {
-                            if (!drv.reward || !drv.reward.active) return <span className="text-zinc-400">—</span>;
-                            const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
-                            const hasF10 = currentCycleTrips >= 10 && !drv.reward.f10_done;
-                            const hasF50 = currentCycleTrips >= 50 && !drv.reward.f50_done;
-
-                            if (!hasF10 && !hasF50) return <span className="text-zinc-400">—</span>;
-
-                            return (
-                              <div className="flex flex-col gap-1">
-                                {hasF10 && (
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        await dismissRewardMilestone(drv.uuid, 'f10');
-                                        showToast("success", `F10 Milestone payout approved for ${drv.name}`);
-                                      } catch (err) {
-                                        showToast("error", "Milestone payout approval failed.");
-                                      }
-                                    }}
-                                    className="interactive-button px-2 py-0.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[9px] font-bold rounded-full flex items-center justify-center w-max uppercase tracking-wider"
-                                  >
-                                    Done F10
-                                  </button>
-                                )}
-                                {hasF50 && (
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        await dismissRewardMilestone(drv.uuid, 'f50');
-                                        showToast("success", `F50 Milestone payout approved for ${drv.name}`);
-                                      } catch (err) {
-                                        showToast("error", "Milestone payout approval failed.");
-                                      }
-                                    }}
-                                    className="interactive-button px-2 py-0.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[9px] font-bold rounded-full flex items-center justify-center w-max uppercase tracking-wider"
-                                  >
-                                    Done F50
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* Action buttons footer */}
-                      <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                        <span className="text-[9px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Actions</span>
-                        <div className="flex items-center gap-1.5">
-                          {/* Dismiss Contact Warning */}
+                        {/* Actions for this driver */}
+                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                           {drv.has_contact_change && (
                             <button
                               onClick={async () => {
                                 try {
                                   await dismissChangeFlag(drv.uuid);
-                                  showToast("success", `Approved contact changes for ${drv.name}`);
+                                  showToast("success", "Approved contact changes for " + drv.name);
                                 } catch (_) {
                                   showToast("error", "Failed approving contact changes.");
                                 }
                               }}
-                              className="interactive-button w-8 h-8 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 dark:text-emerald-300 flex items-center justify-center cursor-pointer"
-                              title="Approve Contact Change"
+                              className="px-3 py-1.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10.5px] font-bold rounded-lg transition"
                             >
-                              <Check size={14} className="stroke-[2.5]" />
+                              Approve Contact
                             </button>
                           )}
-
-                          {/* Reset active reward */}
-                          {drv.reward && drv.reward.active && (
-                            <button
-                              onClick={() => setResetConfirmationDriver(drv)}
-                              className="interactive-button w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 flex items-center justify-center cursor-pointer"
-                              title="Reset Reward tracking"
-                            >
-                              <RefreshCw size={14} className="stroke-[2.5]" />
-                            </button>
-                          )}
-
-                          {/* Edit Details */}
-                          <button
-                            onClick={() => setEditingDriver(drv)}
-                            className="interactive-button w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-350 flex items-center justify-center cursor-pointer"
-                            title="Edit Details"
-                          >
-                            <Edit2 size={14} className="stroke-[2.5]" />
-                          </button>
-
-                          {/* Delete Details */}
-                          <button
-                            onClick={() => setDeletingDriver(drv)}
-                            className={`interactive-button w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${
-                              drv.deleted 
-                                ? 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-350 hover:bg-red-100' 
-                                : 'bg-zinc-100 hover:bg-red-50 hover:text-red-700 dark:bg-zinc-800 dark:hover:bg-red-950/20 dark:text-zinc-300'
-                            }`}
-                            title={drv.deleted ? "Deleted (Click to hard delete)" : "Delete Driver"}
-                          >
-                            <Trash2 size={14} className="stroke-[2.5]" />
-                          </button>
-
-                          {/* If soft-deleted, show restore button */}
-                          {drv.deleted && (
+                          {pendingF10 && (
                             <button
                               onClick={async () => {
                                 try {
-                                  await restoreDriver(drv.uuid);
-                                  showToast("success", `Restored ${drv.name} from soft deletion.`);
+                                  await dismissRewardMilestone(drv.uuid, 'f10');
+                                  showToast("success", "F10 Milestone approved for " + drv.name);
                                 } catch (_) {
-                                  showToast("error", "Failed restoring driver.");
+                                  showToast("error", "Approval failed.");
                                 }
                               }}
-                              className="interactive-button px-2.5 py-1 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white rounded-full text-[10px] font-bold cursor-pointer"
-                              title="Restore Driver"
+                              className="px-3 py-1.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10.5px] font-bold rounded-lg transition"
                             >
-                              Restore
+                              Approve F10
+                            </button>
+                          )}
+                          {pendingF50 && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await dismissRewardMilestone(drv.uuid, 'f50');
+                                  showToast("success", "F50 Milestone approved for " + drv.name);
+                                } catch (_) {
+                                  showToast("error", "Approval failed.");
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[10.5px] font-bold rounded-lg transition"
+                            >
+                              Approve F50
+                            </button>
+                          )}
+                          {drv.reward?.expired && (
+                            <button
+                              onClick={() => setResetConfirmationDriver(drv)}
+                              className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 text-black dark:text-white text-[10.5px] font-bold rounded-lg transition"
+                            >
+                              Reset Cycle
                             </button>
                           )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
-
-          {/* Table Pagination */}
-          {renderTablePagination()}
         </div>
-
-        {/* Floating Bulk Operations Bar */}
-        {renderBulkOperationsBar()}
       </div>
     );
   };
@@ -1925,7 +1588,7 @@ ${cardsHTML}
           </div>
         </header>
 
-        <div className="px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto">
+        <div id="drivers-list-section" className="px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto">
           <h1 className="text-4xl font-extrabold text-black dark:text-white tracking-tight leading-none">Drivers</h1>
 
           <div className="space-y-4 flex-1 flex flex-col justify-between">
@@ -1942,6 +1605,34 @@ ${cardsHTML}
                 >
                   All
                 </button>
+                {filterMode.startsWith('funnel_') && (
+                  <button 
+                    onClick={() => setFilterMode('all')}
+                    className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border bg-black dark:bg-white text-white dark:text-black border-black dark:border-white flex items-center gap-1.5"
+                  >
+                    <span>
+                      Funnel: {
+                        filterMode === 'funnel_not_started' ? 'Not Started' :
+                        filterMode === 'funnel_active_under_10' ? 'Active (0-9 Trips)' :
+                        filterMode === 'funnel_active_silver' ? 'Active Silver (10+)' :
+                        filterMode === 'funnel_active_gold' ? 'Active Gold (50+)' :
+                        filterMode === 'funnel_completed' ? 'Completed' : 'Unknown'
+                      }
+                    </span>
+                    <X size={12} className="stroke-[2.5]" />
+                  </button>
+                )}
+                {['rewards', 'milestones'].includes(filterMode) && (
+                  <button 
+                    onClick={() => setFilterMode('all')}
+                    className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border bg-black dark:bg-white text-white dark:text-black border-black dark:border-white flex items-center gap-1.5"
+                  >
+                    <span>
+                      {filterMode === 'rewards' ? 'Active Rewards' : 'Milestones Reached'}
+                    </span>
+                    <X size={12} className="stroke-[2.5]" />
+                  </button>
+                )}
                 <div className="relative shrink-0">
                   <button 
                     onClick={() => setShowStatusDropdown(prev => !prev)}
@@ -2101,6 +1792,16 @@ ${cardsHTML}
                                   {drv.name || "UNNAMED DRIVER"}
                                 </h3>
                                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                  {drv.tags && drv.tags.map(t => (
+                                    <span key={t} className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border border-zinc-250/60 dark:border-zinc-700/60 select-none">
+                                      {t}
+                                    </span>
+                                  ))}
+                                  {drv.tags && drv.tags.map(t => (
+                                    <span key={t} className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 border border-zinc-250/60 dark:border-zinc-700/60 select-none">
+                                      {t}
+                                    </span>
+                                  ))}
                                   <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 select-none ${
                                     drv.status === 'Active' ? 'bg-black dark:bg-white text-white dark:text-black' :
                                     drv.status === 'Applied' ? 'bg-zinc-150 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200' :
@@ -3261,22 +2962,115 @@ ${cardsHTML}
                 })()}
               </div>
 
-              {/* Remarks/Bio Input */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 space-y-3 shadow-xs">
-                <h3 className="text-[17px] font-extrabold text-black dark:text-white tracking-tight leading-none">Internal Remarks</h3>
-                <textarea 
-                  placeholder="Type any fleet notes here about this driver (e.g. shift times, warning status, payout preferences)..." 
-                  rows={3}
-                  className="w-full text-xs font-semibold bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-black dark:text-white focus:ring-1 focus:ring-black outline-none resize-none"
-                />
-                <div className="flex justify-end pt-1">
-                  <button 
-                    onClick={() => showToast("success", "Remarks saved locally.")}
-                    className="text-[11.5px] font-bold bg-black dark:bg-white text-white dark:text-black hover:opacity-85 p-2 px-4 rounded-xl transition interactive-button"
-                  >
-                    Save Remarks
-                  </button>
+              {/* Manager Operations: Tags & Persistent Sticky Note */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 space-y-4 shadow-xs">
+                <div>
+                  <h3 className="text-[17px] font-extrabold text-black dark:text-white tracking-tight leading-none">Compliance Tags</h3>
+                  <p className="text-[11px] text-zinc-550 dark:text-zinc-400 mt-1">Assign tags to mark operational or compliance conditions</p>
+                  
+                  <div className="flex flex-wrap gap-2 mt-3 select-none">
+                    {[
+                      { name: 'VIP', activeColor: 'bg-amber-500 text-white border-amber-500' },
+                      { name: 'Probation', activeColor: 'bg-zinc-900 dark:bg-white text-white dark:text-black border-zinc-900 dark:border-white' },
+                      { name: 'Fraud Risk', activeColor: 'bg-red-650 text-white border-red-650' },
+                      { name: 'Under Review', activeColor: 'bg-blue-600 text-white border-blue-600' }
+                    ].map(tagOpt => {
+                      const activeTags = drv.tags || [];
+                      const isTagged = activeTags.includes(tagOpt.name);
+                      return (
+                        <button
+                          key={tagOpt.name}
+                          onClick={async () => {
+                            const updated = isTagged 
+                              ? activeTags.filter(t => t !== tagOpt.name)
+                              : [...activeTags, tagOpt.name];
+                            try {
+                              await updateDriverTags(drv.uuid, updated);
+                              showToast('success', 'Tags updated for ' + drv.name);
+                            } catch (_) {
+                              showToast('error', 'Failed updating tags.');
+                            }
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-bold transition border cursor-pointer ${
+                            isTagged 
+                              ? tagOpt.activeColor 
+                              : 'bg-zinc-50 dark:bg-zinc-800/45 hover:bg-zinc-100 dark:hover:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300'
+                          }`}
+                        >
+                          {tagOpt.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-3">
+                  <h3 className="text-[17px] font-extrabold text-black dark:text-white tracking-tight leading-none">Persistent Compliance Notes</h3>
+                  <textarea 
+                    placeholder="Type persistent auditor notes here (e.g. documentation status, overriding reasons, schedule preferences)..." 
+                    rows={3}
+                    defaultValue={drv.sticky_note || ""}
+                    id={`sticky-note-${drv.uuid}`}
+                    className="w-full text-xs font-semibold bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-xl p-3 text-black dark:text-white focus:ring-1 focus:ring-black outline-none resize-none"
+                  />
+                  <div className="flex justify-end pt-1">
+                    <button 
+                      onClick={async () => {
+                        const textarea = document.getElementById(`sticky-note-${drv.uuid}`) as HTMLTextAreaElement | null;
+                        const val = textarea ? textarea.value : "";
+                        try {
+                          await updateDriverStickyNote(drv.uuid, val);
+                          showToast("success", "Compliance note successfully saved.");
+                        } catch (_) {
+                          showToast("error", "Failed saving note.");
+                        }
+                      }}
+                      className="text-[11.5px] font-bold bg-black dark:bg-white text-white dark:text-black hover:opacity-85 p-2 px-4 rounded-xl transition interactive-button"
+                    >
+                      Save Sticky Note
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Historical Audit Timeline Card */}
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 space-y-4 shadow-xs">
+                <div className="border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                  <h3 className="text-[17px] font-extrabold text-black dark:text-white tracking-tight leading-none">Compliance Audit Trail</h3>
+                  <p className="text-[11px] text-zinc-550 mt-1">Timeline of modifications, milestones, and officer overrides</p>
+                </div>
+
+                {(!drv.audit_log || drv.audit_log.length === 0) ? (
+                  <div className="py-6 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    No compliance events logged yet.
+                  </div>
+                ) : (
+                  <div className="relative pl-6 border-l-2 border-zinc-100 dark:border-zinc-800 ml-3.5 space-y-5.5 py-1">
+                    {drv.audit_log.map((log) => {
+                      const logDate = new Date(log.timestamp);
+                      return (
+                        <div key={log.id} className="relative group text-xs text-left">
+                          {/* Timeline dot */}
+                          <div className="absolute -left-[31px] top-0.5 w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 border-2 border-white dark:border-zinc-900 group-hover:bg-black dark:group-hover:bg-white transition-colors duration-200" />
+                          
+                          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                            <span className="font-extrabold text-[12.5px] text-black dark:text-white uppercase tracking-tight">
+                              {log.action}
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-400 font-bold">
+                              {logDate.toLocaleString()}
+                            </span>
+                          </div>
+                          {log.details && (
+                            <p className="text-zinc-500 dark:text-zinc-400 mt-1 select-all font-mono text-[10.5px] leading-relaxed bg-zinc-50/50 dark:bg-zinc-900/30 p-2 rounded-lg border border-zinc-150/20 dark:border-zinc-805/20">
+                              {log.details}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -3302,22 +3096,66 @@ ${cardsHTML}
                       )}
                     </div>
 
-                    {/* Progress Bar */}
+                    {/* Multi-Tier Stacked Progress Line */}
                     {(() => {
                       const completedTrips = drv.tip_count - drv.reward.start_tip_count;
-                      const cycleSize = drv.reward.reward_cycle_size || 52;
-                      const percent = Math.min(100, Math.max(0, (completedTrips / cycleSize) * 100));
+                      const targetTrips = drv.reward.reward_cycle_size || 52;
+                      const stages = [
+                        { name: "Start", trips: 0, label: "0" },
+                        { name: "F10 Tier", trips: 10, label: "10" },
+                        { name: "F50 Tier", trips: 50, label: "50" },
+                        { name: "Complete", trips: targetTrips, label: String(targetTrips) }
+                      ];
+
                       return (
-                        <div className="space-y-2 select-none">
+                        <div className="space-y-4 select-none py-2">
                           <div className="flex justify-between text-xs font-bold text-zinc-650 dark:text-zinc-350">
-                            <span>Progress: {completedTrips} / {cycleSize} Trips</span>
-                            <span>{Math.floor(percent)}% Completed</span>
+                            <span>Cycle Progress: {completedTrips} / {targetTrips} Trips</span>
+                            <span className="font-mono text-black dark:text-white font-black">
+                              {Math.min(100, Math.floor((completedTrips / targetTrips) * 100))}%
+                            </span>
                           </div>
-                          <div className="w-full h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-800">
+
+                          {/* Line and Dots Container */}
+                          <div className="relative flex items-center justify-between px-1">
+                            {/* Background connector line */}
+                            <div className="absolute left-3 right-3 h-1 bg-zinc-100 dark:bg-zinc-800 -z-10 rounded-full" />
+                            
+                            {/* Active connector line */}
                             <div 
-                              className="h-full bg-black dark:bg-white rounded-full transition-all duration-500 shadow-sm"
-                              style={{ width: `${percent}%` }}
-                            ></div>
+                              className="absolute left-3 h-1 bg-black dark:bg-white -z-10 rounded-full transition-all duration-500" 
+                              style={{ 
+                                width: `${Math.min(100, Math.max(0, (completedTrips / targetTrips) * 100))}%`,
+                                maxWidth: "calc(100% - 24px)"
+                              }}
+                            />
+
+                            {stages.map((stg, sIdx) => {
+                              const isCompleted = completedTrips >= stg.trips;
+                              const isNext = completedTrips < stg.trips && (sIdx === 0 || completedTrips >= stages[sIdx - 1].trips);
+                              return (
+                                <div key={stg.name} className="flex flex-col items-center relative">
+                                  {/* Dot */}
+                                  <div 
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border transition-all duration-300 ${
+                                      isCompleted 
+                                        ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-xs scale-110" 
+                                        : isNext 
+                                        ? "bg-zinc-50 border-black text-black dark:bg-zinc-900 dark:border-white dark:text-white ring-4 ring-black/10 dark:ring-white/10 animate-pulse" 
+                                        : "bg-white border-zinc-200 text-zinc-400 dark:bg-zinc-900 dark:border-zinc-800"
+                                    }`}
+                                  >
+                                    {isCompleted ? "✓" : stg.label}
+                                  </div>
+                                  {/* Stage Name */}
+                                  <span className={`text-[10px] font-bold mt-2 whitespace-nowrap ${
+                                    isCompleted ? "text-black dark:text-white" : isNext ? "text-black dark:text-white font-extrabold" : "text-zinc-400"
+                                  }`}>
+                                    {stg.name}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );

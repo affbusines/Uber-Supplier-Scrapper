@@ -13,6 +13,13 @@ export interface RewardState {
   expired?: boolean;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  timestamp: string;
+  details?: string;
+}
+
 export interface Driver {
   uuid: string;
   name: string;
@@ -32,6 +39,9 @@ export interface Driver {
   reward?: RewardState;
   source?: string;
   status?: 'Active' | 'Applied' | 'Waitlisted' | 'Rejected';
+  tags?: string[];
+  sticky_note?: string;
+  audit_log?: AuditLogEntry[];
 }
 
 export type ActiveTab = 

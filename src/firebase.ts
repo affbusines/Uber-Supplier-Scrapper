@@ -145,13 +145,20 @@ export async function syncDrivers(
         ...newDrv,
         has_contact_change: false,
         first_seen: nowStr,
-        last_updated: nowStr
+        last_updated: nowStr,
+        audit_log: [{
+          id: "log_init_" + Date.now(),
+          action: "Driver onboarded",
+          timestamp: nowStr,
+          details: "Source: " + (newDrv.source || "Import / Sync")
+        }]
       };
       added++;
     } else {
       // 2. Existing Driver State Sync with change tracking
       let hasChange = existing.has_contact_change;
       const updates: Partial<Driver> = {};
+      let auditLogs = [...(existing.audit_log || [])];
 
       // Check Email Change
       if (existing.email && newDrv.email !== existing.email) {
@@ -159,6 +166,12 @@ export async function syncDrivers(
         updates.email = newDrv.email;
         hasChange = true;
         changedContacts++;
+        auditLogs.unshift({
+          id: "log_email_" + Date.now() + "_" + Math.random(),
+          action: "Email mismatch detected",
+          timestamp: nowStr,
+          details: "Old: " + existing.email + " ➡️ New: " + newDrv.email
+        });
       } else {
         // preserve existing changed fields if already recorded
         if (existing.old_email) {
@@ -172,6 +185,12 @@ export async function syncDrivers(
         updates.phone = newDrv.phone;
         hasChange = true;
         changedContacts++;
+        auditLogs.unshift({
+          id: "log_phone_" + Date.now() + "_" + Math.random(),
+          action: "Phone mismatch detected",
+          timestamp: nowStr,
+          details: "Old: " + existing.phone + " ➡️ New: " + newDrv.phone
+        });
       } else {
         // preserve existing changed fields if already recorded
         if (existing.old_phone) {
@@ -193,6 +212,12 @@ export async function syncDrivers(
 
         if (completed && !existing.reward.completed) {
           rewardCompletedNames.push(existing.name);
+          auditLogs.unshift({
+            id: "log_reward_complete_" + Date.now(),
+            action: "Reward target completed",
+            timestamp: nowStr,
+            details: "Completed target: " + existing.reward.next_reward_at + " trips"
+          });
         } else if (!completed && remaining <= 5 && remaining < existing.reward.trips_remaining) {
           rewardMilestoneToasts.push({ name: existing.name, remaining });
         }
@@ -205,7 +230,8 @@ export async function syncDrivers(
         ...newDrv, // updates name, photo_url, tip_count, current email/phone
         ...updates,
         has_contact_change: hasChange,
-        last_updated: nowStr
+        last_updated: nowStr,
+        audit_log: auditLogs.slice(0, 50)
       };
       updated++;
     }
@@ -457,6 +483,7 @@ export async function editDriver(
       ...updates
     };
     saveLocalDrivers(existingDrivers);
+    addDriverAuditLogEntry(uuid, 'Driver edited', 'Name: ' + newValues.name + ', Phone: ' + newValues.phone + ', Email: ' + newValues.email);
     window.dispatchEvent(new Event('driver_db_updated'));
   }
 }
@@ -566,6 +593,7 @@ export async function dismissChangeFlag(uuid: string): Promise<void> {
       change_reviewed_at: nowStr
     };
     saveLocalDrivers(existingDrivers);
+    addDriverAuditLogEntry(uuid, 'Approved contact details', 'Mismatch alert dismissed');
     window.dispatchEvent(new Event('driver_db_updated'));
   }
 }
@@ -607,6 +635,7 @@ export async function startRewardTracking(
     existing.reward = rewardState;
     existingDrivers[uuid] = existing;
     saveLocalDrivers(existingDrivers);
+    addDriverAuditLogEntry(uuid, 'Started reward tracking', 'Cycle: ' + rewardCycleSize + ' trips, Expiry: ' + (expiryDays ? expiryDays + ' days' : 'None'));
   }
 
   if (!isSimulated && db && auth?.currentUser) {
@@ -631,6 +660,7 @@ export async function resetReward(uuid: string): Promise<void> {
     delete existing.reward;
     existingDrivers[uuid] = existing;
     saveLocalDrivers(existingDrivers);
+    addDriverAuditLogEntry(uuid, 'Reset reward tracking', 'Milestone cycle was reset');
   }
 
   if (!isSimulated && db && auth?.currentUser) {
@@ -661,6 +691,7 @@ export async function expireRewardState(uuid: string, currentReward: any): Promi
     existing.reward = updatedReward;
     existingDrivers[uuid] = existing;
     saveLocalDrivers(existingDrivers);
+    addDriverAuditLogEntry(uuid, 'Cycle expired', 'Deadline has passed');
   }
 
   if (!isSimulated && db && auth?.currentUser) {
@@ -909,6 +940,7 @@ export async function dismissRewardMilestone(uuid: string, milestone: 'f10' | 'f
   drv.reward = updatedReward;
   dict[uuid] = drv;
   saveLocalDrivers(dict);
+  addDriverAuditLogEntry(uuid, 'Milestone approved', 'Milestone ' + milestone.toUpperCase() + ' payout approved');
   
   if (!isSimulated && db && auth?.currentUser) {
     try {
@@ -1277,3 +1309,75 @@ export async function saveScrapedPayouts(payouts: ScrapedPayout[]): Promise<void
 }
 
 
+
+// ── MANAGER CHIPS, NOTES & TIMELINE COMPLIANCE AUDITING ──
+
+export function addDriverAuditLogEntry(uuid: string, action: string, details?: string): void {
+  const dict = getLocalDrivers();
+  const drv = dict[uuid];
+  if (!drv) return;
+
+  const logEntry = {
+    id: "log_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+    action,
+    timestamp: new Date().toISOString(),
+    details
+  };
+
+  const logs = drv.audit_log || [];
+  drv.audit_log = [logEntry, ...logs].slice(0, 50); // limit to 50 logs
+  dict[uuid] = drv;
+  saveLocalDrivers(dict);
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const docRef = doc(db, 'users', getCurrentUid(), 'drivers', uuid);
+      updateDoc(docRef, { audit_log: drv.audit_log });
+    } catch (e) {
+      console.error('Error logging audit entry:', e);
+    }
+  }
+}
+
+export async function updateDriverTags(uuid: string, tags: string[]): Promise<void> {
+  const dict = getLocalDrivers();
+  const drv = dict[uuid];
+  if (!drv) return;
+
+  drv.tags = tags;
+  dict[uuid] = drv;
+  saveLocalDrivers(dict);
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const docRef = doc(db, 'users', getCurrentUid(), 'drivers', uuid);
+      await updateDoc(docRef, { tags });
+    } catch (e) {
+      console.error('Error updating tags:', e);
+    }
+  }
+  
+  addDriverAuditLogEntry(uuid, 'Tags updated', 'Tags set to: ' + (tags.join(', ') || 'none'));
+  window.dispatchEvent(new Event('driver_db_updated'));
+}
+
+export async function updateDriverStickyNote(uuid: string, note: string): Promise<void> {
+  const dict = getLocalDrivers();
+  const drv = dict[uuid];
+  if (!drv) return;
+
+  drv.sticky_note = note;
+  dict[uuid] = drv;
+  saveLocalDrivers(dict);
+
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      const docRef = doc(db, 'users', getCurrentUid(), 'drivers', uuid);
+      await updateDoc(docRef, { sticky_note: note });
+    } catch (e) {
+      console.error('Error updating sticky note:', e);
+    }
+  }
+  
+  window.dispatchEvent(new Event('driver_db_updated'));
+}
