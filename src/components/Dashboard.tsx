@@ -138,6 +138,7 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
 
   // Download dropdown state
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showDailyLogsMenu, setShowDailyLogsMenu] = useState(false);
 
   // Vehicles search state
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState("");
@@ -669,6 +670,31 @@ ${cardsHTML}
     showToast("success", `Exported ${driversToExport.length} records to CSV.`);
   };
 
+  const handleDailyLogsCSVExport = (logsToExport: DailyLog[]) => {
+    let csvContent = "Date,Vehicle Plate,Submitted At,Partner ID\n";
+    logsToExport.forEach(log => {
+      const row = [
+        log.date,
+        log.vehiclePlate,
+        log.submittedAt ? new Date(log.submittedAt).toISOString() : "",
+        log.partnerId
+      ].map(v => `"${String(v !== undefined && v !== null ? v : '').replace(/"/g, '""')}"`).join(",");
+      csvContent += row + "\n";
+    });
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const formattedDate = new Date().toISOString().slice(0, 10);
+    link.setAttribute("download", `daily_reports_${formattedDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("success", `Exported ${logsToExport.length} daily logs to CSV.`);
+  };
+
   const handleSelectAll = (visibleDrivers: Driver[]) => {
     const allSelected = visibleDrivers.every(d => selectedIds.has(d.uuid));
     const next = new Set(selectedIds);
@@ -697,7 +723,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
               <Menu size={24} className="text-black dark:text-white" />
@@ -706,14 +732,14 @@ ${cardsHTML}
           </div>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
-            {/* Download Dropdown */}
+            {/* Options Dropdown */}
             <div className="relative">
               <button 
                 onClick={() => setShowDownloadMenu(prev => !prev)}
                 className="interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-white"
-                title="Download Options"
+                title="Options"
               >
-                <Download size={22} className="stroke-[2.5]" />
+                <MoreVertical size={22} className="stroke-[2.5]" />
               </button>
               {showDownloadMenu && (
                 <>
@@ -1531,20 +1557,20 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+        <header className="px-6 py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
-            {/* Download Dropdown */}
+            {/* Options Dropdown */}
             <div className="relative">
               <button 
                 onClick={() => setShowDownloadMenu(prev => !prev)}
                 className="interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-white"
-                title="Download Options"
+                title="Options"
               >
-                <Download size={22} className="stroke-[2.5]" />
+                <MoreVertical size={22} className="stroke-[2.5]" />
               </button>
               {showDownloadMenu && (
                 <>
@@ -1730,14 +1756,6 @@ ${cardsHTML}
                     )}
                   </AnimatePresence>
                 </div>
-                <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all shrink-0 flex items-center gap-1">
-                  <span>Assignment</span>
-                  <ChevronRight size={10} className="rotate-90 stroke-[3]" />
-                </button>
-                <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all shrink-0 flex items-center gap-1">
-                  <span>Documents</span>
-                  <ChevronRight size={10} className="rotate-90 stroke-[3]" />
-                </button>
               </div>
 
               {/* Dynamic search inside view */}
@@ -2173,12 +2191,47 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
+            {/* Options Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowDailyLogsMenu(prev => !prev)}
+                className="interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 text-black dark:text-white"
+                title="Options"
+              >
+                <MoreVertical size={22} className="stroke-[2.5]" />
+              </button>
+              {showDailyLogsMenu && (
+                <>
+                  {/* Backdrop */}
+                  <div className="fixed inset-0 z-40" onClick={() => setShowDailyLogsMenu(false)} />
+                  {/* Dropdown */}
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
+                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">Options</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        handleDailyLogsCSVExport(dailyLogs);
+                        setShowDailyLogsMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left"
+                    >
+                      <span className="text-lg">📊</span>
+                      <div>
+                        <div className="text-sm font-bold text-black dark:text-white">Export CSV</div>
+                        <div className="text-[11px] text-zinc-400">Spreadsheet format</div>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
@@ -2432,7 +2485,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
@@ -2773,7 +2826,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header Breadcrumbs */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex flex-col bg-white dark:bg-zinc-950 sticky top-0 z-10 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex flex-col bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10 border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               <button 

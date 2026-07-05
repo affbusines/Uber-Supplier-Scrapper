@@ -208,7 +208,7 @@ export default function App() {
       case 'import':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -224,7 +224,7 @@ export default function App() {
       case 'sandbox':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -240,7 +240,7 @@ export default function App() {
       case 'connection':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -256,7 +256,7 @@ export default function App() {
       case 'banking':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -272,7 +272,7 @@ export default function App() {
       case 'account':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -288,7 +288,7 @@ export default function App() {
       case 'settings':
         return (
           <div className="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar bg-white dark:bg-zinc-950">
-            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
@@ -305,7 +305,7 @@ export default function App() {
         const activeItem = navigationItems.find(item => item.id === activeTab);
         return (
           <div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-950">
-            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
+            <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
                   <Menu size={24} className="text-black dark:text-white" />
