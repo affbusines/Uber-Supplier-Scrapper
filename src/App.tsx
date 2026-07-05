@@ -367,7 +367,7 @@ export default function App() {
                 }}
                 className={`w-full flex items-center gap-4 px-4 py-2.5 rounded-md text-left text-[14px] font-medium transition-colors interactive-button relative ${
                   active 
-                    ? 'bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white pl-6' 
+                    ? 'bg-zinc-100 dark:bg-zinc-900 text-black dark:text-white' 
                     : 'text-zinc-750 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
                 }`}
               >
@@ -431,7 +431,18 @@ export default function App() {
         )}
 
         <div className="flex-1 flex flex-col relative overflow-hidden">
-          {renderActiveScreen()}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="flex-1 flex flex-col h-full overflow-hidden"
+            >
+              {renderActiveScreen()}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Global Toast Alert Banner */}
