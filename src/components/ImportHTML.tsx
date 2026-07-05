@@ -63,6 +63,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [maxPages, setMaxPages] = useState<number>(0);
   const [startPage, setStartPage] = useState<number>(1);
+  const [scrapeDetails, setScrapeDetails] = useState<boolean>(true);
 
   const [currentDrivers, setCurrentDrivers] = useState<any[]>([]);
   const [pendingSyncDrivers, setPendingSyncDrivers] = useState<any[] | null>(null);
@@ -384,7 +385,8 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
   };
 
   const handleStartAutoSync = async () => {
-    alert("handleStartAutoSync called!");
+    localStorage.removeItem("__handledSyncId");
+    handledSyncRef.current = null;
     setStatusMessage(null);
     const uid = currentUser?.uid || "default";
     const creds = getUberCredentials(uid);
@@ -409,6 +411,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
           maxPages: maxPages > 0 ? maxPages : 0,
           startPage: startPage > 1 ? startPage : 1,
           uid: uid,
+          scrapeDetails: scrapeDetails,
         }),
       });
 
@@ -1028,6 +1031,28 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                   </div>
                   <span className="text-[9px] text-[var(--text-muted)] font-mono">
                     খালি রাখলে সব page scrape হবে
+                  </span>
+                </div>
+
+                {/* Scrape Details Toggle */}
+                <div className="flex flex-col gap-1 shrink-0">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] font-mono">
+                    Scrape Details (Contact Info)
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer py-1">
+                    <input 
+                      type="checkbox" 
+                      checked={scrapeDetails}
+                      onChange={(e) => setScrapeDetails(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#06C167] dark:peer-checked:bg-[#06C167]"></div>
+                    <span className="ml-2 text-xs font-bold text-black dark:text-white">
+                      {scrapeDetails ? "Detailed (Phone, Email, Flow)" : "Fast (List Only)"}
+                    </span>
+                  </label>
+                  <span className="text-[9px] text-[var(--text-muted)] font-mono">
+                    অফ রাখলে সিঙ্ক দ্রুত হবে (Uuid, Name, Trips)
                   </span>
                 </div>
 
