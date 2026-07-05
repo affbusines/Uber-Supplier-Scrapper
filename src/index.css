@@ -361,3 +361,14 @@ tr:last-child {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+.glass-header {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.dark .glass-header,
+[data-theme="dark"] .glass-header {
+  background-color: rgba(9, 9, 11, 0.75) !important;
+}

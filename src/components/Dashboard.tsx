@@ -723,7 +723,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between glass-header border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
               <Menu size={24} className="text-black dark:text-white" />
@@ -1557,10 +1557,13 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-6 py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
-          <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
-            <Menu size={24} className="text-black dark:text-white" />
-          </button>
+        <header className="px-6 py-5 flex items-center justify-between glass-header border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
+              <Menu size={24} className="text-black dark:text-white" />
+            </button>
+            <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Drivers</h1>
+          </div>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
             {/* Options Dropdown */}
@@ -1615,7 +1618,6 @@ ${cardsHTML}
         </header>
 
         <div id="drivers-list-section" className="px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto">
-          <h1 className="text-4xl font-extrabold text-black dark:text-white tracking-tight leading-none">Drivers</h1>
 
           <div className="space-y-4 flex-1 flex flex-col justify-between">
               
@@ -2191,10 +2193,13 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
-          <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
-            <Menu size={24} className="text-black dark:text-white" />
-          </button>
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between glass-header border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
+              <Menu size={24} className="text-black dark:text-white" />
+            </button>
+            <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Daily Reports</h1>
+          </div>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
             {/* Options Dropdown */}
@@ -2236,9 +2241,6 @@ ${cardsHTML}
         </header>
 
         <div className="px-4 sm:px-6 space-y-6 pb-8 pt-5 max-w-4xl w-full mx-auto select-none">
-          <div className="flex items-center justify-between shrink-0">
-            <h1 className="text-4xl font-extrabold text-black dark:text-white tracking-tight leading-none">Daily Reports</h1>
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Input Form Column */}
@@ -2485,10 +2487,13 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
-          <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
-            <Menu size={24} className="text-black dark:text-white" />
-          </button>
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between glass-header border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
+              <Menu size={24} className="text-black dark:text-white" />
+            </button>
+            <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Performance</h1>
+          </div>
           <div className="flex items-center gap-3">
             {renderIncognitoButton()}
           </div>
@@ -2496,7 +2501,6 @@ ${cardsHTML}
 
         <div className="px-4 sm:px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto select-none">
           <div className="flex items-center justify-between shrink-0">
-            <h1 className="text-4xl font-extrabold text-black dark:text-white tracking-tight leading-none">Performance</h1>
             <button 
               onClick={() => showToast("success", "Performance report downloaded!")}
               className="interactive-button bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-black dark:text-white rounded-lg p-2.5 px-4 text-xs font-bold flex items-center gap-1.5"
@@ -2826,7 +2830,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header Breadcrumbs */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex flex-col bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10 border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex flex-col glass-header sticky top-0 z-10 border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               <button 
