@@ -195,7 +195,7 @@
   font-family: 'UberMoveText', 'Inter', 'Geist Variable', system-ui, sans-serif;
   font-size: 16px;
   line-height: 24px;
-  border-radius: 0px !important;
+  border-radius: 12px;
   padding: 14px;
   border: 1px solid transparent;
   outline: none;

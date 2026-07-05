@@ -969,7 +969,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                   >
                     Start Page
                   </label>
-                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded-none px-3 py-2 min-w-[130px]">
+                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded-xl px-3 py-2 min-w-[130px]">
                     <Hash
                       size={13}
                       className="text-[var(--text-muted)] shrink-0"
@@ -1004,7 +1004,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                   >
                     Page Limit
                   </label>
-                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded-none px-3 py-2 min-w-[140px]">
+                  <div className="flex items-center gap-2 bg-[var(--text-strong)] border border-zinc-700 rounded-xl px-3 py-2 min-w-[140px]">
                     <Hash
                       size={13}
                       className="text-[var(--text-muted)] shrink-0"
@@ -1226,7 +1226,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 onChange={(e) => setHtmlInput(e.target.value)}
                 placeholder='<div role="rowgroup" class="drivers-rows"> ... </div>'
                 rows={8}
-                className="w-full text-input rounded-none p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
+                className="w-full text-input rounded-xl p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
               ></textarea>
             </div>
 
@@ -1454,7 +1454,7 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={`User\nALTAF SHEIKH...\nPhone\n+880...\nEmail\n0133...`}
                 rows={8}
-                className="w-full text-input rounded-none p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
+                className="w-full text-input rounded-xl p-3 font-mono text-xs focus:ring-1 focus:ring-[var(--brand-primary)] outline-none"
               ></textarea>
             </div>
 

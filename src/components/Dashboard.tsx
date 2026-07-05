@@ -1768,7 +1768,7 @@ ${cardsHTML}
                   placeholder="Search driver by name, phone..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full text-input rounded-none pl-10 text-xs font-medium focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
+                  className="w-full text-input rounded-full pl-10 text-xs font-medium focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
                 />
               </div>
 
@@ -1967,7 +1967,7 @@ ${cardsHTML}
                                               showToast("error", "Milestone payout approval failed.");
                                             }
                                           }}
-                                          className="interactive-button px-2 py-0.5 bg-[#06C167] hover:bg-[#05a858] text-white text-[9.5px] font-black rounded shadow-xs cursor-pointer flex items-center justify-center w-max uppercase tracking-wider"
+                                          className="interactive-button px-2 py-0.5 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black text-[9.5px] font-black rounded-full shadow-xs cursor-pointer flex items-center justify-center w-max uppercase tracking-wider"
                                         >
                                           <span>Done F50</span>
                                         </button>
@@ -2545,7 +2545,7 @@ ${cardsHTML}
                 <input 
                   type="text"
                   placeholder="Search"
-                  className="bg-zinc-100 dark:bg-zinc-900 border-none rounded-lg p-2 pl-8 text-xs font-semibold outline-none focus:ring-1 focus:ring-black dark:focus:ring-white w-40 text-black dark:text-white"
+                  className="bg-zinc-100 dark:bg-zinc-900 border-none rounded-full p-2 pl-8 text-xs font-semibold outline-none focus:ring-1 focus:ring-black dark:focus:ring-white w-40 text-black dark:text-white"
                 />
               </div>
               <button className="bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg p-2 text-xs font-bold text-black dark:text-white flex items-center gap-1.5 border border-transparent">

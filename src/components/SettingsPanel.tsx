@@ -424,7 +424,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                     onChange={(e) =>
                       setRewardCycle(Math.max(1, parseInt(e.target.value) || 1))
                     }
-                    className="w-32 text-input text-center rounded-none px-3 py-2 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
+                    className="w-32 text-input text-center rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
                   />
                   <span className="text-xs text-[var(--text-muted)]">
                     trips per target cycle
@@ -445,7 +445,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                     onChange={(e) =>
                       setDefaultExpiryDays(Math.max(0, parseInt(e.target.value) || 0))
                     }
-                    className="w-32 text-input text-center rounded-none px-3 py-2 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
+                    className="w-32 text-input text-center rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
                   />
                   <span className="text-xs text-[var(--text-muted)]">
                     days before expiration
@@ -640,7 +640,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                   placeholder="your-email@example.com"
                   value={uberEmail}
                   onChange={(e) => setUberEmail(e.target.value)}
-                  className="w-full text-input rounded-none px-3 py-2 text-xs focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
+                  className="w-full text-input rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
                 />
               </div>
 
@@ -655,7 +655,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                     placeholder="Enter account password"
                     value={uberPassword}
                     onChange={(e) => setUberPassword(e.target.value)}
-                    className="w-full text-input rounded-none px-3 py-2 pr-10 text-xs focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
+                    className="w-full text-input rounded-xl px-3 py-2 pr-10 text-xs focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
                   />
                   <button
                     type="button"
@@ -677,7 +677,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                   placeholder="your-org-id"
                   value={uberOrgId}
                   onChange={(e) => setUberOrgId(e.target.value)}
-                  className="w-full text-input rounded-none px-3 py-2 text-xs focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
+                  className="w-full text-input rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-black dark:focus:ring-white outline-none font-mono"
                 />
               </div>
             </div>
@@ -792,7 +792,7 @@ export default function SettingsPanel({ onShowToast }: SettingsPanelProps) {
                         type="time" 
                         value={scheduleTime}
                         onChange={(e) => setScheduleTime(e.target.value)}
-                        className="px-2.5 py-1.5 font-medium font-mono border border-[var(--border-base)] rounded-none bg-white dark:bg-zinc-955 dark:bg-zinc-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none w-max"
+                        className="px-2.5 py-1.5 font-medium font-mono border border-[var(--border-base)] rounded-xl bg-white dark:bg-zinc-955 dark:bg-zinc-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none w-max"
                       />
                     </div>
                   </div>

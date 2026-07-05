@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, updatePassword } from 'firebase/auth';
 import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs, getDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Driver } from './types';
 import firebaseConfig from '../firebase-applet-config.json';
@@ -383,6 +383,21 @@ export function logOutUser() {
     return;
   }
   auth.signOut();
+}
+
+/**
+ * Changes current user password.
+ */
+export async function changeUserPassword(newPassword: string): Promise<void> {
+  if (isSimulated || !auth) {
+    console.log('Simulated password change successful');
+    return;
+  }
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user is currently logged in.');
+  }
+  await updatePassword(user, newPassword);
 }
 
 /**

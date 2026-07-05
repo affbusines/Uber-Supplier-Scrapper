@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { User, Mail, Shield, LogOut, Key, CheckCircle } from "lucide-react";
-import { logOutUser } from "../firebase";
+import { logOutUser, changeUserPassword } from "../firebase";
 
 interface AccountPanelProps {
   user: any;
@@ -10,6 +10,11 @@ export default function AccountPanel({ user }: AccountPanelProps) {
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [isSaved, setIsSaved] = useState(false);
 
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     // Simulate/save profile update locally
@@ -17,6 +22,31 @@ export default function AccountPanel({ user }: AccountPanelProps) {
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
     window.dispatchEvent(new Event("user_profile_updated"));
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess(false);
+
+    if (newPassword.length < 6) {
+      setPasswordError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      await changeUserPassword(newPassword);
+      setPasswordSuccess(true);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      setPasswordError(err.message || "Failed to update password.");
+    }
   };
 
   const handleLogOut = async () => {
@@ -84,7 +114,7 @@ export default function AccountPanel({ user }: AccountPanelProps) {
               placeholder="Enter name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white"
+              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-955 border border-zinc-150 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white"
             />
           </div>
 
@@ -98,7 +128,7 @@ export default function AccountPanel({ user }: AccountPanelProps) {
             <button
               type="button"
               onClick={handleLogOut}
-              className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-650 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-300 rounded-xl transition flex items-center gap-1.5 font-extrabold border border-red-200/50 dark:border-transparent cursor-pointer"
+              className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-650 dark:bg-red-955/20 dark:hover:bg-red-955/40 dark:text-red-300 rounded-xl transition flex items-center gap-1.5 font-extrabold border border-red-200/50 dark:border-transparent cursor-pointer"
             >
               <LogOut size={14} />
               <span>Log Out</span>
@@ -111,6 +141,55 @@ export default function AccountPanel({ user }: AccountPanelProps) {
               <span>Profile updated successfully!</span>
             </div>
           )}
+        </form>
+
+        {/* Change Password Form */}
+        <form onSubmit={handleUpdatePassword} className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold">
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
+              New Password:
+            </label>
+            <input
+              type="password"
+              required
+              placeholder="Enter new password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-955 border border-zinc-150 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
+              Confirm New Password:
+            </label>
+            <input
+              type="password"
+              required
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-955 border border-zinc-150 dark:border-zinc-800 rounded-xl focus:ring-1 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white"
+            />
+          </div>
+
+          {passwordError && (
+            <div className="text-red-500 text-xs font-semibold">{passwordError}</div>
+          )}
+
+          {passwordSuccess && (
+            <div className="text-emerald-600 text-xs flex items-center gap-1.5">
+              <CheckCircle size={12} />
+              <span>Password updated successfully!</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-black dark:text-white hover:opacity-85 text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer border border-zinc-200/50 dark:border-transparent"
+          >
+            Update Password
+          </button>
         </form>
       </div>
     </div>

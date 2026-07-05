@@ -278,7 +278,7 @@ export default function SandboxSimulator() {
                         email: e.target.value,
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -294,7 +294,7 @@ export default function SandboxSimulator() {
                         phone: e.target.value,
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -310,7 +310,7 @@ export default function SandboxSimulator() {
                         trips: Number(e.target.value),
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)] font-mono"
                   />
                 </div>
                 <div>
@@ -325,7 +325,7 @@ export default function SandboxSimulator() {
                         status: e.target.value as any,
                       }))
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)]"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-1.5 text-xs text-zinc-100 outline-none focus:border-[var(--brand-primary)]"
                   >
                     <option value="Active">Active</option>
                     <option value="Applied">Applied</option>
