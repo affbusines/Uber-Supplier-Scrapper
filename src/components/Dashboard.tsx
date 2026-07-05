@@ -697,7 +697,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
               <Menu size={24} className="text-black dark:text-white" />
@@ -1531,7 +1531,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
+        <header className="px-6 py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
@@ -2173,7 +2173,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
@@ -2432,7 +2432,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between bg-white dark:bg-zinc-950 border-b border-zinc-150 dark:border-zinc-800 shrink-0 sticky top-0 z-10">
           <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <Menu size={24} className="text-black dark:text-white" />
           </button>
@@ -2773,7 +2773,7 @@ ${cardsHTML}
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
         {/* Header Breadcrumbs */}
-        <header className="px-4 py-3 sm:px-6 sm:py-5 flex flex-col bg-white dark:bg-zinc-950 z-10 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex flex-col bg-white dark:bg-zinc-950 sticky top-0 z-10 border-b border-zinc-150 dark:border-zinc-800 shrink-0">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               <button 
