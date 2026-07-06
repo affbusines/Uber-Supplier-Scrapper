@@ -1724,7 +1724,7 @@ ${cardsHTML}
           </div>
         </header>
 
-        <div id="drivers-list-section" className="px-6 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto">
+        <div id="drivers-list-section" className="px-6 pt-5 space-y-5 pb-8 flex-1 flex flex-col w-full mx-auto">
 
           <div className="space-y-4 flex-1 flex flex-col justify-between">
               
