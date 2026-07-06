@@ -49,6 +49,7 @@ export type ActiveTab =
   | 'inbox' 
   | 'documents' 
   | 'drivers' 
+  | 'universal_search'
   | 'vehicles' 
   | 'reports' 
   | 'earnings' 

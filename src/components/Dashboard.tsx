@@ -32,6 +32,10 @@ import {
   releasePlateOwnership,
   PlateOwnership,
   auth,
+  searchUniversalDrivers,
+  getSharedDriversMap,
+  SharedUserDetail,
+  UniversalSearchResult,
 } from "../firebase";
 import {
   Search,
@@ -68,7 +72,7 @@ import {
 } from "lucide-react";
 
 interface DashboardProps {
-  activeSubView?: 'home' | 'drivers' | 'vehicles' | 'performance';
+  activeSubView?: 'home' | 'drivers' | 'vehicles' | 'performance' | 'universal_search';
   onNavigate?: (tab: any) => void;
   onOpenMenu?: () => void;
 }
@@ -86,6 +90,10 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sharedDriversMap, setSharedDriversMap] = useState<Record<string, SharedUserDetail[]>>({});
+  const [universalSearchQuery, setUniversalSearchQuery] = useState("");
+  const [universalSearchResults, setUniversalSearchResults] = useState<UniversalSearchResult[]>([]);
+  const [universalSearchLoading, setUniversalSearchLoading] = useState(false);
   const [filterMode, setFilterMode] = useState<
     | "all"
     | "active"
@@ -228,6 +236,46 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const fetchSharedMap = async () => {
+      try {
+        const res = await getSharedDriversMap();
+        if (active) {
+          setSharedDriversMap(res);
+        }
+      } catch (err) {
+        console.error("Error loading shared drivers map:", err);
+      }
+    };
+    fetchSharedMap();
+    window.addEventListener("driver_db_updated", fetchSharedMap);
+    return () => {
+      active = false;
+      window.removeEventListener("driver_db_updated", fetchSharedMap);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeSubView !== 'universal_search') return;
+    const delayDebounce = setTimeout(async () => {
+      if (!universalSearchQuery.trim()) {
+        setUniversalSearchResults([]);
+        return;
+      }
+      setUniversalSearchLoading(true);
+      try {
+        const results = await searchUniversalDrivers(universalSearchQuery);
+        setUniversalSearchResults(results);
+      } catch (e) {
+        console.error("Universal search error:", e);
+      } finally {
+        setUniversalSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [universalSearchQuery, activeSubView]);
 
   // Load pending filter mode from sessionStorage when navigating to drivers view
   useEffect(() => {
@@ -1978,6 +2026,22 @@ ${cardsHTML}
                               </div>
                             </div>
                           </div>
+                          {/* Shared Driver Alert Banner */}
+                          {(() => {
+                            const owners = sharedDriversMap[drv.uuid] || [];
+                            const otherOwners = owners.filter(o => o.uid !== getCurrentUid());
+                            if (otherOwners.length === 0) return null;
+                            return (
+                              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3.5 flex flex-col gap-1.5 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/5 dark:bg-amber-500/5 p-2.5 rounded-xl border border-amber-500/10" onClick={(e) => e.stopPropagation()}>
+                                <span className="font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1.5 select-none">
+                                  <AlertTriangle size={12} className="stroke-[2.5]" /> Shared Driver Profile
+                                </span>
+                                <span className="font-medium text-[11.5px] leading-tight">
+                                  Also registered with: <span className="font-extrabold">{otherOwners.map(o => o.name || o.email || "Other Partner").join(", ")}</span>
+                                </span>
+                              </div>
+                            );
+                          })()}
 
                           {/* Actions Footer */}
                           <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
@@ -2853,6 +2917,26 @@ ${cardsHTML}
         </header>
 
         <div className="px-4 sm:px-6 space-y-6 pb-8 pt-5 max-w-4xl w-full mx-auto">
+          {/* Shared Driver Profile Alert Banner */}
+          {(() => {
+            const owners = sharedDriversMap[drv.uuid] || [];
+            const otherOwners = owners.filter(o => o.uid !== getCurrentUid());
+            if (otherOwners.length === 0) return null;
+            return (
+              <div className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-200/60 dark:border-amber-900/40 p-4 rounded-2xl text-amber-800 dark:text-amber-300 flex items-start gap-3">
+                <AlertTriangle size={18} className="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
+                <div className="space-y-1 text-xs">
+                  <p className="font-extrabold text-[12px] uppercase tracking-wider select-none">Shared Driver Profile Warning</p>
+                  <p className="font-medium text-[13px] leading-relaxed">
+                    This driver profile is registered under multiple manager accounts. Duplicate listings are active in the accounts of:{" "}
+                    <span className="font-bold">
+                      {otherOwners.map(o => `${o.name || 'Manager'} (${o.email || 'No email'})`).join(", ")}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
           {/* Driver header details */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -3414,6 +3498,153 @@ ${cardsHTML}
       </div>
     );
   };
+  const renderUniversalSearchView = () => {
+    return (
+      <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
+        <header className="px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between glass-header border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <button onClick={onOpenMenu} className="md:hidden interactive-button p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900">
+              <Menu size={24} className="text-black dark:text-white" />
+            </button>
+            <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight leading-none">Universal Driver Search</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {renderIncognitoButton()}
+          </div>
+        </header>
+
+        <div className="px-4 sm:px-6 space-y-6 pb-8 pt-5 max-w-4xl w-full mx-auto">
+          {/* Header Info Card */}
+          <div className="bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-150 dark:border-zinc-800 rounded-2xl p-5 shadow-2xs space-y-2">
+            <h2 className="text-[17px] font-extrabold text-black dark:text-white tracking-tight">Cross-Account Search Engine</h2>
+            <p className="text-xs text-zinc-550 dark:text-zinc-400 font-medium leading-relaxed">
+              Verify driver registrations globally. Search by full name, email address, or phone number to see if a driver is linked to other fleet partner or supplier accounts.
+            </p>
+          </div>
+
+          {/* Search bar layout */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={20} />
+            <input
+              type="text"
+              placeholder="Search by driver's name, email or phone number..."
+              value={universalSearchQuery}
+              onChange={(e) => setUniversalSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-black dark:focus:ring-white outline-none text-black dark:text-white font-medium text-sm transition-all placeholder-zinc-400 shadow-sm"
+              autoFocus
+            />
+          </div>
+
+          {/* Results section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                {universalSearchLoading ? "Searching database..." : `Search Results (${universalSearchResults.length})`}
+              </h3>
+            </div>
+
+            {universalSearchLoading ? (
+              <div className="py-20 flex flex-col items-center justify-center space-y-3">
+                <div className="w-8 h-8 border-2 border-zinc-800 dark:border-zinc-200 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs text-zinc-400 font-bold">Querying records...</span>
+              </div>
+            ) : universalSearchResults.length === 0 ? (
+              <div className="py-16 text-center text-zinc-400 space-y-2 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/20 dark:bg-zinc-900/10">
+                <Search size={28} className="mx-auto text-zinc-300 dark:text-zinc-700" />
+                <p className="text-sm font-bold text-black dark:text-white">No Drivers Found</p>
+                <p className="text-xs text-zinc-500 max-w-[280px] mx-auto leading-normal">
+                  {universalSearchQuery ? "Try typing another search term or double check driver spelling." : "Enter a search term above to begin universal lookups."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {universalSearchResults.map(({ driver, owners }) => {
+                  const currentUid = getCurrentUid();
+                  const isOwnedByCurrent = owners.some(o => o.uid === currentUid);
+                  
+                  return (
+                    <div
+                      key={driver.uuid}
+                      className={`bg-white dark:bg-zinc-900 border rounded-2xl p-5 shadow-xs transition-all flex flex-col gap-4 ${
+                        owners.length > 1 ? 'border-amber-255 dark:border-amber-500/35 bg-amber-50/5 dark:bg-amber-950/10' : 'border-zinc-150 dark:border-zinc-800'
+                      }`}
+                    >
+                      {/* Avatar, name, status */}
+                      <div className="flex items-center gap-3.5 justify-between">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <Avatar
+                            photoUrl={driver.photo_url}
+                            name={driver.name}
+                            size={48}
+                            className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 object-cover shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <h3 className="font-extrabold text-[16px] text-black dark:text-white tracking-tight leading-tight truncate uppercase">
+                              {driver.name || "UNNAMED DRIVER"}
+                            </h3>
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                driver.status === 'Active' ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-zinc-150 dark:bg-zinc-850 text-zinc-650'
+                              }`}>
+                                {driver.status || 'Active'}
+                              </span>
+                              {isOwnedByCurrent && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-transparent">
+                                  In Your Fleet
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contact details */}
+                      <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3.5 text-xs grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-widest block mb-0.5">Phone</span>
+                          <span className={shieldClass("font-bold text-[13.5px] font-mono text-black dark:text-white select-all")}>
+                            {driver.phone || "—"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-widest block mb-0.5">Email</span>
+                          <span className={shieldClass("font-bold text-[12px] font-mono text-zinc-600 dark:text-zinc-400 truncate block select-all")} title={driver.email}>
+                            {driver.email || "—"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Registered accounts listing */}
+                      <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 text-xs space-y-1.5 font-sans">
+                        <span className="text-[9px] font-extrabold text-zinc-400 uppercase tracking-widest block select-none">
+                          Associated User Accounts ({owners.length})
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {owners.map(owner => (
+                            <span
+                              key={owner.uid}
+                              className={`px-2.5 py-1 rounded-lg text-[11.5px] font-semibold border flex flex-col gap-0.5 ${
+                                owner.uid === currentUid
+                                  ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white'
+                                  : 'bg-amber-500/10 dark:bg-amber-500/5 border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300'
+                              }`}
+                            >
+                              <span className="font-extrabold leading-none">{owner.name || "Fleet Partner"}</span>
+                              {owner.email && <span className="text-[9.5px] opacity-75 font-mono leading-none">{owner.email}</span>}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderActiveSubViewContent = () => {
     if (activeSubView === 'home') {
@@ -3424,6 +3655,9 @@ ${cardsHTML}
     }
     if (activeSubView === 'performance') {
       return renderPerformanceTableView();
+    }
+    if (activeSubView === 'universal_search') {
+      return renderUniversalSearchView();
     }
     
     // activeSubView === 'drivers'

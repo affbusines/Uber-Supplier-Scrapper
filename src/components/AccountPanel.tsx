@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { User, Mail, Shield, LogOut, Key, CheckCircle } from "lucide-react";
-import { logOutUser, changeUserPassword } from "../firebase";
+import { logOutUser, changeUserPassword, updateUserProfile } from "../firebase";
 
 interface AccountPanelProps {
   user: any;
@@ -15,13 +15,15 @@ export default function AccountPanel({ user }: AccountPanelProps) {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate/save profile update locally
-    localStorage.setItem(`displayName_${user?.uid || "default"}`, displayName);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
-    window.dispatchEvent(new Event("user_profile_updated"));
+    try {
+      await updateUserProfile(user?.uid || "default", displayName);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {

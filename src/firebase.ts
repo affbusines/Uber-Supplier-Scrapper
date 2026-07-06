@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, updatePassword } from 'firebase/auth';
-import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs, getDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, collection, onSnapshot, setDoc, getDocs, getDoc, deleteDoc, updateDoc, writeBatch, collectionGroup } from 'firebase/firestore';
 import { Driver } from './types';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -317,6 +317,7 @@ export async function logInWithGoogle() {
       emailVerified: true
     };
     localStorage.setItem('uber_mock_auth', JSON.stringify(mockUser));
+    registerMockUser(mockUser.uid, mockUser.displayName, mockUser.email);
     window.dispatchEvent(new Event('auth_state_changed'));
     return mockUser;
   }
@@ -324,7 +325,15 @@ export async function logInWithGoogle() {
   try {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
-    return result.user;
+    const user = result.user;
+    if (user && db) {
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        displayName: user.displayName || user.email?.split('@')[0] || 'Manager',
+        email: user.email || ''
+      }, { merge: true });
+    }
+    return user;
   } catch (err) {
     console.error('Sign-in failed: ', err);
     throw err;
@@ -345,6 +354,7 @@ export async function loginWithEmailPassword(email: string, password: string) {
       emailVerified: false
     };
     localStorage.setItem('uber_mock_auth', JSON.stringify(mockUser));
+    registerMockUser(mockUser.uid, mockUser.displayName, mockUser.email);
     window.dispatchEvent(new Event('auth_state_changed'));
     return { user: mockUser, isNewUser: false };
   }
@@ -352,7 +362,15 @@ export async function loginWithEmailPassword(email: string, password: string) {
   try {
     // Try to sign in first
     const result = await signInWithEmailAndPassword(auth, email, password);
-    return { user: result.user, isNewUser: false };
+    const user = result.user;
+    if (user && db) {
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        displayName: user.displayName || email.split('@')[0],
+        email: email
+      }, { merge: true });
+    }
+    return { user, isNewUser: false };
   } catch (err: any) {
     if (
       err.code === 'auth/user-not-found' ||
@@ -362,7 +380,15 @@ export async function loginWithEmailPassword(email: string, password: string) {
       // Auto-create a new account
       try {
         const result = await createUserWithEmailAndPassword(auth, email, password);
-        return { user: result.user, isNewUser: true };
+        const user = result.user;
+        if (user && db) {
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            displayName: user.displayName || email.split('@')[0],
+            email: email
+          }, { merge: true });
+        }
+        return { user, isNewUser: true };
       } catch (createErr: any) {
         console.error('Account creation failed:', createErr);
         throw createErr;
@@ -1395,4 +1421,266 @@ export async function updateDriverStickyNote(uuid: string, note: string): Promis
   }
   
   window.dispatchEvent(new Event('driver_db_updated'));
+}
+
+// ── UNIVERSAL CROSS-ACCOUNT DRIVER REGISTRY & SEARCH ──
+
+export interface SharedUserDetail {
+  uid: string;
+  name: string;
+  email: string;
+}
+
+export interface UniversalSearchResult {
+  driver: Driver;
+  owners: SharedUserDetail[];
+}
+
+/**
+ * Register user in local storage registry for simulated mode.
+ */
+export function registerMockUser(uid: string, displayName: string, email: string) {
+  try {
+    const raw = localStorage.getItem('uber_mock_users_registry');
+    const registry = raw ? JSON.parse(raw) : {};
+    registry[uid] = { uid, displayName, email };
+    localStorage.setItem('uber_mock_users_registry', JSON.stringify(registry));
+  } catch (e) {
+    console.error('Error registering mock user:', e);
+  }
+}
+
+/**
+ * Updates a user's display name both locally and in Firestore.
+ */
+export async function updateUserProfile(uid: string, displayName: string): Promise<void> {
+  localStorage.setItem(`displayName_${uid}`, displayName);
+  
+  // Update mock auth session if active
+  const mockUserAuth = localStorage.getItem('uber_mock_auth');
+  if (mockUserAuth) {
+    try {
+      const parsed = JSON.parse(mockUserAuth);
+      if (parsed.uid === uid) {
+        parsed.displayName = displayName;
+        localStorage.setItem('uber_mock_auth', JSON.stringify(parsed));
+      }
+    } catch (_) {}
+  }
+  
+  // Update in mock users registry
+  const registryRaw = localStorage.getItem('uber_mock_users_registry');
+  const registry = registryRaw ? JSON.parse(registryRaw) : {};
+  if (registry[uid]) {
+    registry[uid].displayName = displayName;
+  } else {
+    registry[uid] = { uid, displayName, email: '' };
+  }
+  localStorage.setItem('uber_mock_users_registry', JSON.stringify(registry));
+
+  // Update in Firestore
+  if (!isSimulated && db && auth?.currentUser) {
+    try {
+      await setDoc(doc(db, 'users', uid), { displayName }, { merge: true });
+    } catch (err) {
+      console.error('Error updating user profile in Firestore:', err);
+    }
+  }
+  window.dispatchEvent(new Event('user_profile_updated'));
+}
+
+/**
+ * Compiles a dictionary mapping driverUuid to the details of all users that have that driver.
+ */
+export async function getSharedDriversMap(): Promise<Record<string, SharedUserDetail[]>> {
+  const sharedMap: Record<string, SharedUserDetail[]> = {};
+
+  if (isSimulated || !db) {
+    // ── Simulated Mode ──
+    const registryRaw = localStorage.getItem('uber_mock_users_registry');
+    const usersRegistry = registryRaw ? JSON.parse(registryRaw) : {};
+
+    const tempRegistry: Record<string, SharedUserDetail> = {};
+    const currentMockAuth = localStorage.getItem('uber_mock_auth');
+    if (currentMockAuth) {
+      try {
+        const parsed = JSON.parse(currentMockAuth);
+        tempRegistry[parsed.uid] = {
+          uid: parsed.uid,
+          name: localStorage.getItem(`displayName_${parsed.uid}`) || parsed.displayName || parsed.email?.split('@')[0] || 'Manager',
+          email: parsed.email || ''
+        };
+      } catch (_) {}
+    }
+
+    Object.keys(usersRegistry).forEach(uid => {
+      tempRegistry[uid] = {
+        uid,
+        name: localStorage.getItem(`displayName_${uid}`) || usersRegistry[uid].displayName || usersRegistry[uid].name || usersRegistry[uid].email?.split('@')[0] || 'Manager',
+        email: usersRegistry[uid].email || ''
+      };
+    });
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('uber_driver_data_db_')) {
+        const uid = key.replace('uber_driver_data_db_', '');
+        if (!tempRegistry[uid]) {
+          const storedName = localStorage.getItem(`displayName_${uid}`);
+          tempRegistry[uid] = {
+            uid,
+            name: storedName || `Manager (${uid.substring(0, 6)})`,
+            email: usersRegistry[uid]?.email || ''
+          };
+        }
+
+        try {
+          const driversData = localStorage.getItem(key);
+          if (driversData) {
+            const driversDict = JSON.parse(driversData) as Record<string, Driver>;
+            Object.values(driversDict).forEach(drv => {
+              if (drv.deleted) return;
+              if (!sharedMap[drv.uuid]) {
+                sharedMap[drv.uuid] = [];
+              }
+              if (!sharedMap[drv.uuid].some(u => u.uid === uid)) {
+                sharedMap[drv.uuid].push(tempRegistry[uid]);
+              }
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  } else {
+    // ── Real Firestore Mode ──
+    try {
+      const q = collectionGroup(db, 'drivers');
+      const qSnap = await getDocs(q);
+      const userCache: Record<string, SharedUserDetail> = {};
+
+      for (const docSnap of qSnap.docs) {
+        const drv = docSnap.data() as Driver;
+        if (drv.deleted) continue;
+
+        const ownerUid = docSnap.ref.parent.parent?.id;
+        if (!ownerUid) continue;
+
+        if (!userCache[ownerUid]) {
+          let name = `Manager (${ownerUid.substring(0, 6)})`;
+          let email = '';
+          try {
+            const userSnap = await getDoc(doc(db, 'users', ownerUid));
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              name = userData.displayName || userData.email?.split('@')[0] || name;
+              email = userData.email || email;
+            }
+          } catch (e) {
+            console.error('Failed fetching user doc for ownerUid:', ownerUid, e);
+          }
+          userCache[ownerUid] = { uid: ownerUid, name, email };
+        }
+
+        if (!sharedMap[drv.uuid]) {
+          sharedMap[drv.uuid] = [];
+        }
+        if (!sharedMap[drv.uuid].some(u => u.uid === ownerUid)) {
+          sharedMap[drv.uuid].push(userCache[ownerUid]);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching collectionGroup drivers:', err);
+    }
+  }
+
+  return sharedMap;
+}
+
+/**
+ * Universal search function to look up drivers by name, email, or phone number.
+ */
+export async function searchUniversalDrivers(queryText: string): Promise<UniversalSearchResult[]> {
+  const cleanQuery = queryText.trim().toLowerCase();
+  if (!cleanQuery) return [];
+
+  const resultsMap: Record<string, UniversalSearchResult> = {};
+  const sharedMap = await getSharedDriversMap();
+
+  if (isSimulated || !db) {
+    // ── Simulated Mode ──
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('uber_driver_data_db_')) {
+        try {
+          const driversData = localStorage.getItem(key);
+          if (driversData) {
+            const driversDict = JSON.parse(driversData) as Record<string, Driver>;
+            Object.values(driversDict).forEach(drv => {
+              if (drv.deleted) return;
+
+              const matches = 
+                drv.name?.toLowerCase().includes(cleanQuery) ||
+                drv.email?.toLowerCase().includes(cleanQuery) ||
+                drv.phone?.toLowerCase().includes(cleanQuery) ||
+                drv.old_email?.toLowerCase().includes(cleanQuery) ||
+                drv.old_phone?.toLowerCase().includes(cleanQuery);
+
+              if (matches) {
+                if (!resultsMap[drv.uuid]) {
+                  resultsMap[drv.uuid] = {
+                    driver: drv,
+                    owners: sharedMap[drv.uuid] || []
+                  };
+                } else {
+                  // Keep the most recently updated driver profile for presentation
+                  if (new Date(drv.last_updated).getTime() > new Date(resultsMap[drv.uuid].driver.last_updated).getTime()) {
+                    resultsMap[drv.uuid].driver = drv;
+                  }
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  } else {
+    // ── Real Firestore Mode ──
+    try {
+      const q = collectionGroup(db, 'drivers');
+      const qSnap = await getDocs(q);
+
+      for (const docSnap of qSnap.docs) {
+        const drv = docSnap.data() as Driver;
+        if (drv.deleted) continue;
+
+        const matches = 
+          drv.name?.toLowerCase().includes(cleanQuery) ||
+          drv.email?.toLowerCase().includes(cleanQuery) ||
+          drv.phone?.toLowerCase().includes(cleanQuery) ||
+          drv.old_email?.toLowerCase().includes(cleanQuery) ||
+          drv.old_phone?.toLowerCase().includes(cleanQuery);
+
+        if (matches) {
+          if (!resultsMap[drv.uuid]) {
+            resultsMap[drv.uuid] = {
+              driver: drv,
+              owners: sharedMap[drv.uuid] || []
+            };
+          } else {
+            if (new Date(drv.last_updated).getTime() > new Date(resultsMap[drv.uuid].driver.last_updated).getTime()) {
+              resultsMap[drv.uuid].driver = drv;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error conducting universal search in Firestore:', err);
+    }
+  }
+
+  return Object.values(resultsMap);
 }

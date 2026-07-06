@@ -14,6 +14,7 @@ import {
   Mail,
   FileText,
   Users,
+  Search,
   Car,
   TrendingUp,
   DollarSign,
@@ -45,7 +46,7 @@ export default function App() {
   const getTabFromHash = (): ActiveTab => {
     const hash = window.location.hash.replace('#/', '').replace('#', '');
     const validTabs: ActiveTab[] = [
-      'home', 'inbox', 'documents', 'drivers', 'vehicles', 'reports', 'earnings', 
+      'home', 'inbox', 'documents', 'drivers', 'universal_search', 'vehicles', 'reports', 'earnings', 
       'live_map', 'banking', 'invoices', 'account', 'help', 'install', 'import', 
       'sandbox', 'connection', 'settings'
     ];
@@ -176,6 +177,7 @@ export default function App() {
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'drivers', label: 'Drivers', icon: Users },
+    { id: 'universal_search', label: 'Universal Search', icon: Search },
     { id: 'vehicles', label: 'Daily Reports', icon: ClipboardList },
     { id: 'banking', label: 'Banking', icon: Briefcase },
     { id: 'account', label: 'Account', icon: UserIcon },
@@ -203,6 +205,8 @@ export default function App() {
         return <Dashboard activeSubView="home" onNavigate={handleTabChange} onOpenMenu={() => setMobileMenuOpen(true)} />;
       case 'drivers':
         return <Dashboard activeSubView="drivers" onNavigate={handleTabChange} onOpenMenu={() => setMobileMenuOpen(true)} />;
+      case 'universal_search':
+        return <Dashboard activeSubView="universal_search" onNavigate={handleTabChange} onOpenMenu={() => setMobileMenuOpen(true)} />;
       case 'vehicles':
         return <Dashboard activeSubView="vehicles" onNavigate={handleTabChange} onOpenMenu={() => setMobileMenuOpen(true)} />;
       case 'import':
