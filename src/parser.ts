@@ -58,7 +58,13 @@ export function parseDriversFromHTML(htmlString: string): Omit<Driver, 'first_se
       
       const avatarImg = row.querySelector('[data-baseweb="avatar"] img') || row.querySelector('img');
       if (avatarImg) {
-        photo_url = avatarImg.getAttribute('src') || '';
+        let src = avatarImg.getAttribute('src') || '';
+        if (src.startsWith('//')) {
+          src = 'https:' + src;
+        } else if (src.startsWith('http://')) {
+          src = src.replace('http://', 'https://');
+        }
+        photo_url = src;
         name = avatarImg.getAttribute('alt') || '';
       }
 

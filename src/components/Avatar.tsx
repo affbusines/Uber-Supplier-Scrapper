@@ -35,10 +35,19 @@ export default function Avatar({
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
 
-  if (photoUrl && !imgError) {
+  let cleanPhotoUrl = photoUrl;
+  if (cleanPhotoUrl) {
+    if (cleanPhotoUrl.startsWith('//')) {
+      cleanPhotoUrl = 'https:' + cleanPhotoUrl;
+    } else if (cleanPhotoUrl.startsWith('http://')) {
+      cleanPhotoUrl = cleanPhotoUrl.replace('http://', 'https://');
+    }
+  }
+
+  if (cleanPhotoUrl && !imgError) {
     return (
       <img
-        src={photoUrl}
+        src={cleanPhotoUrl}
         alt={name}
         className={`rounded-full shrink-0 object-cover ${className}`}
         style={{ width: size, height: size }}
