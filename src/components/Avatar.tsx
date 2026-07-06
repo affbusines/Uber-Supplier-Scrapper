@@ -35,12 +35,6 @@ export default function Avatar({
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
 
-  const isMockOrPublic = photoUrl && (
-    photoUrl.includes("dicebear.com") || 
-    photoUrl.startsWith("/") || 
-    photoUrl.startsWith("data:")
-  );
-
   if (photoUrl && !imgError) {
     return (
       <img
@@ -48,12 +42,8 @@ export default function Avatar({
         alt={name}
         className={`rounded-full shrink-0 object-cover ${className}`}
         style={{ width: size, height: size }}
-        onError={() => {
-          if (!isMockOrPublic) {
-            setImgError(true);
-          }
-        }}
-        referrerPolicy="no-referrer-when-downgrade"
+        onError={() => setImgError(true)} // fallback on error (e.g. expired expired CloudFront CDN link)
+        referrerPolicy="no-referrer"
       />
     );
   }
