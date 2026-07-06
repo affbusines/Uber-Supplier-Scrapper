@@ -113,7 +113,18 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     | "funnel_active_gold"
     | "funnel_completed"
   >("all");
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [activeFilterStatus, setActiveFilterStatus] = useState<string>("");
+  const [activeFilterContactChange, setActiveFilterContactChange] = useState<string>("");
+  const [activeFilterTripCount, setActiveFilterTripCount] = useState<string>("");
+  const [activeFilterTripActivity, setActiveFilterTripActivity] = useState<string>("");
+  const [activeFilterRewardStatus, setActiveFilterRewardStatus] = useState<string>("");
+
+  const [tempFilterStatus, setTempFilterStatus] = useState<string>("");
+  const [tempFilterContactChange, setTempFilterContactChange] = useState<string>("");
+  const [tempFilterTripCount, setTempFilterTripCount] = useState<string>("");
+  const [tempFilterTripActivity, setTempFilterTripActivity] = useState<string>("");
+  const [tempFilterRewardStatus, setTempFilterRewardStatus] = useState<string>("");
   const [sortBy, setSortBy] = useState<"trips_desc" | "trips_asc" | "name_asc" | "newest_desc">("trips_desc");
   
   // Sub-tabs state
@@ -277,6 +288,16 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     return () => clearTimeout(delayDebounce);
   }, [universalSearchQuery, activeSubView]);
 
+  useEffect(() => {
+    if (showFilterModal) {
+      setTempFilterStatus(activeFilterStatus);
+      setTempFilterContactChange(activeFilterContactChange);
+      setTempFilterTripCount(activeFilterTripCount);
+      setTempFilterTripActivity(activeFilterTripActivity);
+      setTempFilterRewardStatus(activeFilterRewardStatus);
+    }
+  }, [showFilterModal]);
+
   // Load pending filter mode from sessionStorage when navigating to drivers view
   useEffect(() => {
     if (activeSubView === 'drivers') {
@@ -340,7 +361,7 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   // Reset page to 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterMode, sortBy, showDeleted]);
+  }, [searchQuery, filterMode, sortBy, showDeleted, activeFilterStatus, activeFilterContactChange, activeFilterTripCount, activeFilterTripActivity, activeFilterRewardStatus]);
 
   const showToast = (type: "success" | "info" | "error", msg: string) => {
     setToast({ type, message: msg });
@@ -412,7 +433,6 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
     };
   })();
 
-  // Filter & Search Logic for Drivers
   const filteredDrivers = drivers.filter((drv) => {
     if (!showDeleted && drv.deleted) return false;
     const q = searchQuery.toLowerCase().trim();
@@ -424,54 +444,93 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       (drv.old_phone && drv.old_phone.includes(q)) ||
       (drv.old_email && drv.old_email.toLowerCase().includes(q))
     );
+    if (!matchesQuery) return false;
 
-    if (filterMode === "changed") return matchesQuery && drv.has_contact_change && !drv.deleted;
-    if (filterMode === "status_active") return matchesQuery && (drv.status === 'Active' || !drv.status) && !drv.deleted;
-    if (filterMode === "status_rejected") return matchesQuery && drv.status === 'Rejected' && !drv.deleted;
-    if (filterMode === "status_applied") return matchesQuery && drv.status === 'Applied' && !drv.deleted;
-    if (filterMode === "rewards") return matchesQuery && drv.reward?.active && !drv.deleted;
+    // Legacy filterMode compatibility (for home statistics card navigation)
+    if (filterMode === "changed" && !drv.has_contact_change) return false;
+    if (filterMode === "status_active" && drv.status !== 'Active' && drv.status) return false;
+    if (filterMode === "status_rejected" && drv.status !== 'Rejected') return false;
+    if (filterMode === "status_applied" && drv.status !== 'Applied') return false;
+    if (filterMode === "rewards" && !drv.reward?.active) return false;
     if (filterMode === "milestones") {
-      if (drv.deleted || !drv.reward?.active) return false;
+      if (!drv.reward?.active) return false;
       const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
       const hasF10 = currentCycleTrips >= 10 && !drv.reward.f10_done;
       const hasF50 = currentCycleTrips >= 50 && !drv.reward.f50_done;
-      return matchesQuery && (hasF10 || hasF50);
+      if (!hasF10 && !hasF50) return false;
     }
     if (filterMode === "f10") {
-      if (drv.deleted || !drv.reward?.active) return false;
+      if (!drv.reward?.active) return false;
       const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
-      return matchesQuery && currentCycleTrips >= 10;
+      if (currentCycleTrips < 10) return false;
     }
     if (filterMode === "f50") {
-      if (drv.deleted || !drv.reward?.active) return false;
+      if (!drv.reward?.active) return false;
       const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
-      return matchesQuery && currentCycleTrips >= 50;
+      if (currentCycleTrips < 50) return false;
     }
-    if (filterMode === "funnel_not_started") {
-      return matchesQuery && (!drv.reward || !drv.reward.active) && !drv.deleted;
-    }
+    if (filterMode === "funnel_not_started" && (drv.reward && drv.reward.active)) return false;
     if (filterMode === "funnel_active_under_10") {
-      if (drv.deleted || !drv.reward?.active || drv.reward?.completed) return false;
+      if (!drv.reward?.active || drv.reward?.completed) return false;
       const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
-      return matchesQuery && currentCycleTrips < 10;
+      if (currentCycleTrips >= 10) return false;
     }
     if (filterMode === "funnel_active_silver") {
-      if (drv.deleted || !drv.reward?.active || drv.reward?.completed) return false;
+      if (!drv.reward?.active || drv.reward?.completed) return false;
       const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
-      return matchesQuery && currentCycleTrips >= 10 && currentCycleTrips < 50;
+      if (currentCycleTrips < 10 || currentCycleTrips >= 50) return false;
     }
     if (filterMode === "funnel_active_gold") {
-      if (drv.deleted || !drv.reward?.active || drv.reward?.completed) return false;
+      if (!drv.reward?.active || drv.reward?.completed) return false;
       const currentCycleTrips = drv.tip_count - drv.reward.start_tip_count;
-      return matchesQuery && currentCycleTrips >= 50;
+      if (currentCycleTrips < 50) return false;
     }
-    if (filterMode === "funnel_completed") {
-      return matchesQuery && drv.reward?.completed && !drv.deleted;
+    if (filterMode === "funnel_completed" && !drv.reward?.completed) return false;
+    if (filterMode === "most_trips" && drv.tip_count < 150) return false;
+    if (filterMode === "inactive" && !drv.deleted) return false;
+    if (filterMode === "active" && drv.deleted) return false;
+
+    // Custom Filters
+    if (activeFilterStatus) {
+      if (activeFilterStatus === "Active") {
+        if (drv.status !== "Active" && drv.status) return false;
+      } else {
+        if (drv.status !== activeFilterStatus) return false;
+      }
     }
-    if (filterMode === "most_trips") return matchesQuery && drv.tip_count >= 150 && !drv.deleted;
-    if (filterMode === "active") return matchesQuery && !drv.deleted;
-    if (filterMode === "inactive") return matchesQuery && drv.deleted;
-    return matchesQuery && !drv.deleted;
+
+    if (activeFilterContactChange) {
+      if (activeFilterContactChange === "Yes" && !drv.has_contact_change) return false;
+      if (activeFilterContactChange === "No" && drv.has_contact_change) return false;
+    }
+
+    if (activeFilterTripCount && activeFilterTripCount !== "All") {
+      const trips = drv.reward?.active ? (drv.tip_count - drv.reward.start_tip_count) : drv.tip_count;
+      if (activeFilterTripCount === "No trip" && trips !== 0) return false;
+      if (activeFilterTripCount === "1-50 trips" && (trips < 1 || trips > 50)) return false;
+      if (activeFilterTripCount === "51-200 trips" && (trips < 51 || trips > 200)) return false;
+      if (activeFilterTripCount === "201-500 trips" && (trips < 201 || trips > 500)) return false;
+      if (activeFilterTripCount === "500+ trips" && trips <= 500) return false;
+    }
+
+    if (activeFilterTripActivity) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const lastUpdatedDate = new Date(drv.last_updated);
+      const isNoTrips = lastUpdatedDate.getTime() < sevenDaysAgo.getTime();
+      
+      if (activeFilterTripActivity === "No trips for 7 days" && !isNoTrips) return false;
+      if (activeFilterTripActivity === "Actively driving" && isNoTrips) return false;
+    }
+
+    if (activeFilterRewardStatus) {
+      if (!drv.reward) return false;
+      if (activeFilterRewardStatus === "In progress" && (!drv.reward.active || drv.reward.completed || drv.reward.expired)) return false;
+      if (activeFilterRewardStatus === "Completed" && !drv.reward.completed) return false;
+      if (activeFilterRewardStatus === "Expired" && !drv.reward.expired) return false;
+    }
+
+    return true;
   });
 
   const sortedDrivers = [...filteredDrivers].sort((a, b) => {
@@ -1669,156 +1728,86 @@ ${cardsHTML}
 
           <div className="space-y-4 flex-1 flex flex-col justify-between">
               
-              {/* Filter pills row */}
-              <div className={`flex items-center gap-1.5 py-1 shrink-0 select-none ${showStatusDropdown ? 'overflow-visible' : 'overflow-x-auto no-scrollbar'}`}>
-                <button 
-                  onClick={() => setFilterMode('all')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border ${
-                    filterMode === 'all' 
-                      ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white' 
-                      : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  All
-                </button>
-                {filterMode.startsWith('funnel_') && (
-                  <button 
-                    onClick={() => setFilterMode('all')}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border bg-black dark:bg-white text-white dark:text-black border-black dark:border-white flex items-center gap-1.5"
-                  >
-                    <span>
-                      Funnel: {
-                        filterMode === 'funnel_not_started' ? 'Not Started' :
-                        filterMode === 'funnel_active_under_10' ? 'Active (0-9 Trips)' :
-                        filterMode === 'funnel_active_silver' ? 'Active Silver (10+)' :
-                        filterMode === 'funnel_active_gold' ? 'Active Gold (50+)' :
-                        filterMode === 'funnel_completed' ? 'Completed' : 'Unknown'
-                      }
-                    </span>
-                    <X size={12} className="stroke-[2.5]" />
-                  </button>
-                )}
-                {['rewards', 'milestones'].includes(filterMode) && (
-                  <button 
-                    onClick={() => setFilterMode('all')}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border bg-black dark:bg-white text-white dark:text-black border-black dark:border-white flex items-center gap-1.5"
-                  >
-                    <span>
-                      {filterMode === 'rewards' ? 'Active Rewards' : 'Milestones Reached'}
-                    </span>
-                    <X size={12} className="stroke-[2.5]" />
-                  </button>
-                )}
-                <div className="relative shrink-0">
-                  <button 
-                    onClick={() => setShowStatusDropdown(prev => !prev)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all interactive-button shrink-0 border flex items-center gap-1 active:scale-[0.97] ${
-                      ['status_active', 'status_rejected', 'status_applied', 'changed'].includes(filterMode)
-                        ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white' 
-                        : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span>
-                      {filterMode === 'status_active' ? 'Status: Active' :
-                       filterMode === 'status_rejected' ? 'Status: Rejected' :
-                       filterMode === 'status_applied' ? 'Status: Applied' :
-                       filterMode === 'changed' ? 'Status: Contact Change' :
-                       'Status'}
-                    </span>
-                    <ChevronRight size={10} className={`stroke-[3] transition-transform duration-200 ${showStatusDropdown ? 'rotate-270' : 'rotate-90'}`} />
-                  </button>
-                  <AnimatePresence>
-                    {showStatusDropdown && (
-                      <>
-                        {/* Backdrop */}
-                        <div className="fixed inset-0 z-40" onClick={() => setShowStatusDropdown(false)} />
-                        {/* Dropdown */}
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-                          className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden"
-                          style={{ transformOrigin: 'top left' }}
-                        >
-                          <button
-                            onClick={() => {
-                              setFilterMode('status_active');
-                              setShowStatusDropdown(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold ${
-                              filterMode === 'status_active' ? 'text-black dark:text-white bg-zinc-100 dark:bg-zinc-800' : 'text-black dark:text-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                              <span>Active</span>
-                            </div>
-                            {filterMode === 'status_active' && <Check size={14} className="stroke-[3]" />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setFilterMode('status_applied');
-                              setShowStatusDropdown(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold border-t border-zinc-100 dark:border-zinc-800 ${
-                              filterMode === 'status_applied' ? 'text-blue-500 bg-blue-50/10' : 'text-black dark:text-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-blue-500" />
-                              <span>Applied</span>
-                            </div>
-                            {filterMode === 'status_applied' && <Check size={14} className="stroke-[3]" />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setFilterMode('status_rejected');
-                              setShowStatusDropdown(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold border-t border-zinc-100 dark:border-zinc-800 ${
-                              filterMode === 'status_rejected' ? 'text-red-500 bg-red-50/10' : 'text-black dark:text-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-red-500" />
-                              <span>Rejected</span>
-                            </div>
-                            {filterMode === 'status_rejected' && <Check size={14} className="stroke-[3]" />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setFilterMode('changed');
-                              setShowStatusDropdown(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition text-left text-xs font-bold border-t border-zinc-100 dark:border-zinc-800 ${
-                              filterMode === 'changed' ? 'text-amber-500 bg-amber-50/10' : 'text-black dark:text-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-amber-500" />
-                              <span>Contact Change</span>
-                            </div>
-                            {filterMode === 'changed' && <Check size={14} className="stroke-[3]" />}
-                          </button>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Dynamic search inside view */}
-              <div className="relative shrink-0 select-none">
-                <Search size={14} className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+              {/* Custom Search Pill */}
+              <div className="flex items-center bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-805/80 rounded-full px-4.5 py-2.5 shadow-xs w-full select-none gap-2 shrink-0">
+                <Search size={16} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Search driver by name, phone..."
+                  placeholder="Search Drivers"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full text-input rounded-full pl-10 text-xs font-medium focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
+                  className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-black dark:text-white placeholder-zinc-400"
                 />
+                <button
+                  onClick={() => setShowFilterModal(true)}
+                  className={`interactive-button p-1.5 rounded-lg flex items-center justify-center cursor-pointer shrink-0 transition ${
+                    activeFilterStatus || activeFilterContactChange || activeFilterTripCount !== "" || activeFilterTripActivity || activeFilterRewardStatus
+                      ? "text-black dark:text-white bg-zinc-200 dark:bg-zinc-800"
+                      : "text-zinc-450 hover:text-black dark:hover:text-white"
+                  }`}
+                  title="Filter Drivers"
+                >
+                  <SlidersHorizontal size={15} className="stroke-[2.5]" />
+                </button>
               </div>
+
+              {/* Active filters row */}
+              {(activeFilterStatus || activeFilterContactChange || activeFilterTripCount || activeFilterTripActivity || activeFilterRewardStatus) && (
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 select-none shrink-0 flex-wrap">
+                  {activeFilterStatus && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-850 text-zinc-850 dark:text-zinc-200 flex items-center gap-1.5">
+                      Status: {activeFilterStatus}
+                      <button onClick={() => setActiveFilterStatus("")} className="hover:text-red-500 cursor-pointer">
+                        <X size={10} className="stroke-[3]" />
+                      </button>
+                    </span>
+                  )}
+                  {activeFilterContactChange && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-850 text-zinc-850 dark:text-zinc-200 flex items-center gap-1.5">
+                      Contact: {activeFilterContactChange}
+                      <button onClick={() => setActiveFilterContactChange("")} className="hover:text-red-500 cursor-pointer">
+                        <X size={10} className="stroke-[3]" />
+                      </button>
+                    </span>
+                  )}
+                  {activeFilterTripCount && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-850 text-zinc-850 dark:text-zinc-200 flex items-center gap-1.5">
+                      Trips: {activeFilterTripCount}
+                      <button onClick={() => setActiveFilterTripCount("")} className="hover:text-red-500 cursor-pointer">
+                        <X size={10} className="stroke-[3]" />
+                      </button>
+                    </span>
+                  )}
+                  {activeFilterTripActivity && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-850 text-zinc-850 dark:text-zinc-200 flex items-center gap-1.5">
+                      Activity: {activeFilterTripActivity}
+                      <button onClick={() => setActiveFilterTripActivity("")} className="hover:text-red-500 cursor-pointer">
+                        <X size={10} className="stroke-[3]" />
+                      </button>
+                    </span>
+                  )}
+                  {activeFilterRewardStatus && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-850 text-zinc-850 dark:text-zinc-200 flex items-center gap-1.5">
+                      Reward: {activeFilterRewardStatus}
+                      <button onClick={() => setActiveFilterRewardStatus("")} className="hover:text-red-500 cursor-pointer">
+                        <X size={10} className="stroke-[3]" />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setActiveFilterStatus("");
+                      setActiveFilterContactChange("");
+                      setActiveFilterTripCount("");
+                      setActiveFilterTripActivity("");
+                      setActiveFilterRewardStatus("");
+                    }}
+                    className="text-[10px] font-black uppercase text-zinc-400 hover:text-black dark:hover:text-white cursor-pointer px-1.5"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
 
               {/* Driver list container */}
               <div className="flex-1 space-y-4 overflow-y-auto no-scrollbar py-1">
@@ -2129,6 +2118,195 @@ ${cardsHTML}
 
             </div>
           </div>
+
+          {/* Custom Filter Drawer Modal */}
+          <AnimatePresence>
+            {showFilterModal && (
+              <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs" onClick={() => setShowFilterModal(false)}>
+                <motion.div
+                  initial={{ x: "100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "100%" }}
+                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                  className="w-full max-w-md h-full bg-white dark:bg-zinc-950 flex flex-col shadow-2xl overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Header */}
+                  <div className="px-6 py-5 border-b border-zinc-150/80 dark:border-zinc-800/80 flex items-center justify-between shrink-0">
+                    <button onClick={() => setShowFilterModal(false)} className="interactive-button p-1 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-black dark:text-white">
+                      <X size={20} className="stroke-[2.5]" />
+                    </button>
+                    <span className="text-[16px] font-black text-black dark:text-white tracking-tight">Filter</span>
+                    <button
+                      onClick={() => {
+                        setTempFilterStatus("");
+                        setTempFilterContactChange("");
+                        setTempFilterTripCount("");
+                        setTempFilterTripActivity("");
+                        setTempFilterRewardStatus("");
+                      }}
+                      className="interactive-button text-xs font-bold text-zinc-400 hover:text-black dark:hover:text-white transition"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+
+                  {/* Scrollable Content */}
+                  <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 no-scrollbar">
+                    {/* Status Group */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Status</h3>
+                      <div className="space-y-1">
+                        {["Active", "Applied", "Waitlisted", "Rejected"].map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => setTempFilterStatus(tempFilterStatus === status ? "" : status)}
+                            className="w-full flex items-center justify-between py-2 text-left font-bold text-[13.5px] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                          >
+                            <span>{status}</span>
+                            <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                              tempFilterStatus === status
+                                ? "border-black dark:border-white bg-black dark:bg-white"
+                                : "border-zinc-300 dark:border-zinc-700"
+                            }`}>
+                              {tempFilterStatus === status && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <hr className="border-zinc-100 dark:border-zinc-800" />
+
+                    {/* Contact Change Group */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Contact Change</h3>
+                      <div className="space-y-1">
+                        {[
+                          { label: "Yes", value: "Yes" },
+                          { label: "No", value: "No" }
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setTempFilterContactChange(tempFilterContactChange === opt.value ? "" : opt.value)}
+                            className="w-full flex items-center justify-between py-2 text-left font-bold text-[13.5px] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                          >
+                            <span>{opt.label}</span>
+                            <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                              tempFilterContactChange === opt.value
+                                ? "border-black dark:border-white bg-black dark:bg-white"
+                                : "border-zinc-300 dark:border-zinc-700"
+                            }`}>
+                              {tempFilterContactChange === opt.value && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <hr className="border-zinc-100 dark:border-zinc-800" />
+
+                    {/* Reward Eligible Trip Count Group */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Reward Eligible Trip Count</h3>
+                      <div className="space-y-1">
+                        {["All", "No trip", "1-50 trips", "51-200 trips", "201-500 trips", "500+ trips"].map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setTempFilterTripCount(tempFilterTripCount === opt ? "" : opt)}
+                            className="w-full flex items-center justify-between py-2 text-left font-bold text-[13.5px] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                          >
+                            <span>{opt}</span>
+                            <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                              tempFilterTripCount === opt
+                                ? "border-black dark:border-white bg-black dark:bg-white"
+                                : "border-zinc-300 dark:border-zinc-700"
+                            }`}>
+                              {tempFilterTripCount === opt && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <hr className="border-zinc-100 dark:border-zinc-800" />
+
+                    {/* Trip Activity Group */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Trip Activity</h3>
+                      <div className="space-y-1">
+                        {["No trips for 7 days", "Actively driving"].map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setTempFilterTripActivity(tempFilterTripActivity === opt ? "" : opt)}
+                            className="w-full flex items-center justify-between py-2 text-left font-bold text-[13.5px] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                          >
+                            <span>{opt}</span>
+                            <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                              tempFilterTripActivity === opt
+                                ? "border-black dark:border-white bg-black dark:bg-white"
+                                : "border-zinc-300 dark:border-zinc-700"
+                            }`}>
+                              {tempFilterTripActivity === opt && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <hr className="border-zinc-100 dark:border-zinc-800" />
+
+                    {/* Reward Status Group */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Reward Status</h3>
+                      <div className="space-y-1">
+                        {["In progress", "Completed", "Expired"].map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setTempFilterRewardStatus(tempFilterRewardStatus === opt ? "" : opt)}
+                            className="w-full flex items-center justify-between py-2 text-left font-bold text-[13.5px] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                          >
+                            <span>{opt}</span>
+                            <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                              tempFilterRewardStatus === opt
+                                ? "border-black dark:border-white bg-black dark:bg-white"
+                                : "border-zinc-300 dark:border-zinc-700"
+                            }`}>
+                              {tempFilterRewardStatus === opt && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 py-5 border-t border-zinc-150/80 dark:border-zinc-800/80 flex flex-col gap-2 shrink-0 bg-white dark:bg-zinc-950">
+                    <button
+                      onClick={() => {
+                        setActiveFilterStatus(tempFilterStatus);
+                        setActiveFilterContactChange(tempFilterContactChange);
+                        setActiveFilterTripCount(tempFilterTripCount);
+                        setActiveFilterTripActivity(tempFilterTripActivity);
+                        setActiveFilterRewardStatus(tempFilterRewardStatus);
+                        setFilterMode("all"); // reset legacy filterMode
+                        setShowFilterModal(false);
+                      }}
+                      className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-xs transition active:scale-[0.98] cursor-pointer text-center"
+                    >
+                      Apply
+                    </button>
+                    <button
+                      onClick={() => setShowFilterModal(false)}
+                      className="w-full py-2 bg-transparent text-zinc-500 hover:text-black dark:hover:text-white font-bold text-xs rounded-xl transition cursor-pointer text-center"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       );
     };
