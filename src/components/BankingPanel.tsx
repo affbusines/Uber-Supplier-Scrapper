@@ -29,6 +29,44 @@ import {
   ScrapedPayout 
 } from "../firebase";
 
+function extractAndNormalizePlate(str: string): string | null {
+  if (!str) return null;
+  // Match Type A: MNG-HA-14-6766 or MNGHA146766 (3 letters, 2 letters, 2 digits, 4 digits)
+  const matchTypeA = str.match(/\b([A-Za-z]{3})-?([A-Za-z]{2})-?(\d{2})-?(\d{4})\b/);
+  if (matchTypeA) {
+    return `${matchTypeA[1].toUpperCase()}-${matchTypeA[2].toUpperCase()}-${matchTypeA[3]}-${matchTypeA[4]}`;
+  }
+
+  // Match Type B: DHM-DWA-117136 or DHMDWA117136 (3 letters, 3 letters, 6 digits)
+  const matchTypeB = str.match(/\b([A-Za-z]{3})-?([A-Za-z]{3})-?(\d{6})\b/);
+  if (matchTypeB) {
+    return `${matchTypeB[1].toUpperCase()}-${matchTypeB[2].toUpperCase()}-${matchTypeB[3]}`;
+  }
+
+  return null;
+}
+
+function extractAllPlates(text: string): string[] {
+  if (!text) return [];
+  const plates: string[] = [];
+  
+  // Find all Type A plates
+  const regexA = /\b([A-Za-z]{3})-?([A-Za-z]{2})-?(\d{2})-?(\d{4})\b/g;
+  let matchA;
+  while ((matchA = regexA.exec(text)) !== null) {
+    plates.push(`${matchA[1].toUpperCase()}-${matchA[2].toUpperCase()}-${matchA[3]}-${matchA[4]}`);
+  }
+
+  // Find all Type B plates
+  const regexB = /\b([A-Za-z]{3})-?([A-Za-z]{3})-?(\d{6})\b/g;
+  let matchB;
+  while ((matchB = regexB.exec(text)) !== null) {
+    plates.push(`${matchB[1].toUpperCase()}-${matchB[2].toUpperCase()}-${matchB[3]}`);
+  }
+
+  return Array.from(new Set(plates));
+}
+
 interface BankingEntry {
   id: string;
   weekStart: string;
@@ -131,11 +169,33 @@ export default function BankingPanel() {
           payoutDict[p.transactionId] = p;
         });
 
+        // 1. Normalize plates for existing unclaimed payouts
+        Object.values(payoutDict).forEach(p => {
+          if (p.status === 'unclaimed') {
+            const normalized = extractAndNormalizePlate(p.description || '');
+            if (normalized) {
+              p.vehiclePlate = normalized;
+            }
+          }
+        });
+
+        // 2. Add newly scraped to dictionary and normalize
+        scraped.forEach(p => {
+          if (!payoutDict[p.transactionId]) {
+            const normalized = extractAndNormalizePlate(p.description || '');
+            if (normalized) {
+              p.vehiclePlate = normalized;
+            }
+            payoutDict[p.transactionId] = p;
+          }
+        });
+
         let matchCount = 0;
         let totalCredited = 0;
 
-        scraped.forEach(p => {
-          if (payoutDict[p.transactionId]) {
+        // 3. Match all unclaimed payouts
+        Object.values(payoutDict).forEach(p => {
+          if (p.status !== 'unclaimed') {
             return;
           }
 
@@ -155,7 +215,6 @@ export default function BankingPanel() {
               ...prev, 
               `✓ MATCH FOUND: Vehicle ${p.vehiclePlate} (BDT ${p.amount}) attributed to your wallet.`
             ]);
-            payoutDict[p.transactionId] = p;
           }
         });
 
@@ -183,7 +242,7 @@ export default function BankingPanel() {
 
     setSyncLogs(["Starting manual parser...", "Analyzing paste content..."]);
     
-    const regex = /(Promotion\s*-\s*Congratulations![\s\S]*?\[Payment\s*ID\]:\s*[a-f0-9]+)/gi;
+    const regex = /((?:Promotion|Congratulations|Incentive|You\s+have\s+been\s+paid)[\s\S]*?\[Payment\s*ID\]:\s*[a-zA-Z0-9\-_]+)/gi;
     
     const parsed: ScrapedPayout[] = [];
     let match;
@@ -192,12 +251,11 @@ export default function BankingPanel() {
     while ((match = regex.exec(textContent)) !== null) {
       const matchStr = match[1].trim().replace(/\s+/g, ' ');
       const amountMatch = matchStr.match(/BDT\s*([0-9,.]+)/i);
-      const plateMatch = matchStr.match(/\b([A-Z]{3}-[A-Z]{3}-\d{6})\b/);
-      const idMatch = matchStr.match(/\[Payment\s*ID\]:\s*([a-f0-9]+)/i);
+      const idMatch = matchStr.match(/\[Payment\s*ID\]:\s*([a-zA-Z0-9\-_]+)/i);
 
       if (idMatch) {
         const amountVal = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 500.0;
-        const vehiclePlate = plateMatch ? plateMatch[1].toUpperCase() : "UNKNOWN";
+        const vehiclePlate = extractAndNormalizePlate(matchStr) || "UNKNOWN";
         const transactionId = idMatch[1];
         
         parsed.push({
@@ -214,10 +272,8 @@ export default function BankingPanel() {
     }
 
     if (parsed.length === 0) {
-      const loosePlateRegex = /\b([A-Z]{3}-[A-Z]{3}-\d{6})\b/g;
       const looseAmountRegex = /BDT\s*([0-9,.]+)/i;
-      
-      const plates = textContent.match(loosePlateRegex) || [];
+      const plates = extractAllPlates(textContent);
       const amountMatch = textContent.match(looseAmountRegex);
       const parsedAmount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 500.0;
 
@@ -249,11 +305,33 @@ export default function BankingPanel() {
       localPayouts[p.transactionId] = p;
     });
 
+    // 1. Normalize existing unclaimed payouts
+    Object.values(localPayouts).forEach(p => {
+      if (p.status === 'unclaimed') {
+        const normalized = extractAndNormalizePlate(p.description || '');
+        if (normalized) {
+          p.vehiclePlate = normalized;
+        }
+      }
+    });
+
+    // 2. Add newly parsed
+    parsed.forEach(p => {
+      if (!localPayouts[p.transactionId]) {
+        const normalized = extractAndNormalizePlate(p.description || '');
+        if (normalized) {
+          p.vehiclePlate = normalized;
+        }
+        localPayouts[p.transactionId] = p;
+      }
+    });
+
     let matches = 0;
     let credited = 0;
 
-    parsed.forEach(p => {
-      if (localPayouts[p.transactionId]) return;
+    // 3. Match all unclaimed
+    Object.values(localPayouts).forEach(p => {
+      if (p.status !== 'unclaimed') return;
 
       const matchingLog = dailyLogs.find(log => {
         const samePlate = log.vehiclePlate === p.vehiclePlate;
@@ -268,7 +346,6 @@ export default function BankingPanel() {
         matches++;
         credited += p.amount;
         setSyncLogs(prev => [...prev, `✓ MATCH FOUND: Vehicle ${p.vehiclePlate} (BDT ${p.amount}) attributed to your wallet.`]);
-        localPayouts[p.transactionId] = p;
       }
     });
 

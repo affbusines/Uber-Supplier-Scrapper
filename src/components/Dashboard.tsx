@@ -2584,46 +2584,7 @@ ${cardsHTML}
                 </button>
               </form>
 
-              {/* ── My Registered Plates ── */}
-              {(() => {
-                const myPlates = plateOwnerships.filter(o => o.ownerId === myUid);
-                if (myPlates.length === 0) return null;
-                return (
-                  <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-2.5">
-                    <h4 className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
-                      My Registered Plates ({myPlates.length})
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {myPlates.map(ownership => (
-                        <div
-                          key={ownership.plate}
-                          className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 group"
-                        >
-                          <span className="text-[11px] font-mono font-extrabold text-black dark:text-white uppercase tracking-wide">
-                            {ownership.plate}
-                          </span>
-                          <button
-                            onClick={async () => {
-                              if (!confirm(`Release plate "${ownership.plate}"? Others will be able to claim it.`)) return;
-                              try {
-                                await releasePlateOwnership(ownership.plate, myUid);
-                                await loadPlateOwnerships();
-                                showToast('info', `Plate ${ownership.plate} released.`);
-                              } catch (err: any) {
-                                showToast('error', err?.message || 'Release failed.');
-                              }
-                            }}
-                            title="Release this plate"
-                            className="text-zinc-400 hover:text-red-500 transition cursor-pointer opacity-0 group-hover:opacity-100 ml-0.5"
-                          >
-                            <X size={11} className="stroke-[3]" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
+
             </div>
 
             {/* Entries Log List Column */}
@@ -2643,13 +2604,14 @@ ${cardsHTML}
                     const date = new Date(log.date);
                     const weekNum = getWeekNumber(log.date);
                     
-                    // Match with a claimed payout for this user
-                    const matchingPayout = scrapedPayouts.find(p => 
+                    // Match with claimed payouts for this user
+                    const matchingPayouts = scrapedPayouts.filter(p => 
                       p.status === 'claimed' &&
                       p.attributedTo === myUid &&
                       p.vehiclePlate === log.vehiclePlate &&
                       getWeekNumber(p.settlementDate) === weekNum
                     );
+                    const totalPaid = matchingPayouts.reduce((sum, p) => sum + p.amount, 0);
 
                     return (
                       <div
@@ -2661,10 +2623,10 @@ ${cardsHTML}
                             <span className="font-extrabold text-black dark:text-white text-sm tracking-wide uppercase">
                               {log.vehiclePlate}
                             </span>
-                            {matchingPayout ? (
+                            {totalPaid > 0 ? (
                               <span className="text-[9px] bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full"></span>
-                                Payout Done BDT {matchingPayout.amount.toLocaleString()}
+                                Payout Done BDT {totalPaid.toLocaleString()}
                               </span>
                             ) : (
                               <span className="text-[9px] bg-zinc-100 dark:bg-zinc-800 text-zinc-450 dark:text-zinc-500 px-1.5 py-0.5 rounded font-extrabold">
