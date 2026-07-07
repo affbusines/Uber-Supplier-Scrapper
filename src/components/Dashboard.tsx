@@ -528,6 +528,8 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       if (activeFilterRewardStatus === "In progress" && (!drv.reward.active || drv.reward.completed || drv.reward.expired)) return false;
       if (activeFilterRewardStatus === "Completed" && !drv.reward.completed) return false;
       if (activeFilterRewardStatus === "Expired" && !drv.reward.expired) return false;
+      if (activeFilterRewardStatus === "F10" && (!drv.reward.active || (!drv.reward.f10_done && (drv.tip_count - drv.reward.start_tip_count) < 10))) return false;
+      if (activeFilterRewardStatus === "F50" && (!drv.reward.active || (!drv.reward.f50_done && (drv.tip_count - drv.reward.start_tip_count) < 50))) return false;
     }
 
     return true;
@@ -2260,7 +2262,7 @@ ${cardsHTML}
                     <div className="space-y-3">
                       <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Reward Status</h3>
                       <div className="space-y-1">
-                        {["In progress", "Completed", "Expired"].map((opt) => (
+                        {["In progress", "Completed", "Expired", "F10", "F50"].map((opt) => (
                           <button
                             key={opt}
                             onClick={() => setTempFilterRewardStatus(tempFilterRewardStatus === opt ? "" : opt)}
