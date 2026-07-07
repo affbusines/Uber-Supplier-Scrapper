@@ -1044,9 +1044,19 @@ export default function ImportHTML({ onSuccess }: ImportHTMLProps) {
                       type="checkbox" 
                       checked={scrapeDetails}
                       onChange={(e) => setScrapeDetails(e.target.checked)}
-                      className="sr-only peer"
+                      className="sr-only"
                     />
-                    <div className="w-11 h-6 bg-zinc-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#06C167] dark:peer-checked:bg-[#06C167]"></div>
+                    <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                      scrapeDetails ? "bg-black dark:bg-white" : "bg-zinc-200 dark:bg-zinc-800"
+                    }`}>
+                      <div 
+                        className={`absolute top-[2px] left-[2px] border rounded-full h-5 w-5 transition-all duration-200 ${
+                          scrapeDetails 
+                            ? "translate-x-5 bg-white dark:bg-black border-transparent" 
+                            : "translate-x-0 bg-white border-zinc-300 dark:border-zinc-700 dark:bg-zinc-300"
+                        }`}
+                      />
+                    </div>
                     <span className="ml-2 text-xs font-bold text-black dark:text-white">
                       {scrapeDetails ? "Detailed (Phone, Email, Flow)" : "Fast (List Only)"}
                     </span>
