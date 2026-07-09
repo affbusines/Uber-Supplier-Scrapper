@@ -2081,6 +2081,7 @@ ${cardsHTML}
                               </div>
                             </div>
                           </div>
+
                           {/* Shared Driver Alert Banner */}
                           {(() => {
                             const owners = sharedDriversMap[drv.uuid] || [];
@@ -2092,7 +2093,7 @@ ${cardsHTML}
                                   <AlertTriangle size={12} className="stroke-[2.5]" /> Shared Driver Profile
                                 </span>
                                 <span className="font-medium text-[11.5px] leading-tight">
-                                  Also registered with: <span className="font-extrabold">{otherOwners.map(o => o.name || o.email || "Other Partner").join(", ")}</span>
+                                  Also registered with: <span className="font-extrabold">{otherOwners.map(o => o.email ? (o.name && !o.name.startsWith('Manager (') ? `${o.name} (${o.email})` : o.email) : (o.name || "Fleet Partner")).join(", ")}</span>
                                 </span>
                               </div>
                             );
@@ -3163,7 +3164,7 @@ ${cardsHTML}
                   <p className="font-medium text-[13px] leading-relaxed">
                     This driver profile is registered under multiple manager accounts. Duplicate listings are active in the accounts of:{" "}
                     <span className="font-bold">
-                      {otherOwners.map(o => `${o.name || 'Manager'} (${o.email || 'No email'})`).join(", ")}
+                      {otherOwners.map(o => o.email ? (o.name && !o.name.startsWith('Manager (') ? `${o.name} (${o.email})` : o.email) : (o.name || "Fleet Partner")).join(", ")}
                     </span>
                   </p>
                 </div>
@@ -3731,6 +3732,7 @@ ${cardsHTML}
       </div>
     );
   };
+
   const renderUniversalSearchView = () => {
     return (
       <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
@@ -3799,7 +3801,7 @@ ${cardsHTML}
                     <div
                       key={driver.uuid}
                       className={`bg-white dark:bg-zinc-900 border rounded-2xl p-5 shadow-xs transition-all flex flex-col gap-4 ${
-                        owners.length > 1 ? 'border-amber-255 dark:border-amber-500/35 bg-amber-50/5 dark:bg-amber-950/10' : 'border-zinc-150 dark:border-zinc-800'
+                        owners.length > 1 ? 'border-amber-200 dark:border-amber-500/35 bg-amber-50/5 dark:bg-amber-950/10' : 'border-zinc-150 dark:border-zinc-800'
                       }`}
                     >
                       {/* Avatar, name, status */}
@@ -3858,7 +3860,7 @@ ${cardsHTML}
                               key={owner.uid}
                               className={`px-2.5 py-1 rounded-lg text-[11.5px] font-semibold border flex flex-col gap-0.5 ${
                                 owner.uid === currentUid
-                                  ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white'
+                                  ? 'bg-zinc-100 dark:bg-zinc-850 border-zinc-200 dark:border-zinc-700 text-black dark:text-white'
                                   : 'bg-amber-500/10 dark:bg-amber-500/5 border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300'
                               }`}
                             >
@@ -3867,6 +3869,22 @@ ${cardsHTML}
                             </span>
                           ))}
                         </div>
+                        {/* Warning banner indicating it is also registered with other managers */}
+                        {(() => {
+                          const otherOwners = owners.filter(o => o.uid !== currentUid);
+                          if (otherOwners.length === 0) return null;
+                          return (
+                            <div className="mt-2.5 bg-amber-500/10 dark:bg-amber-500/5 border border-amber-200/50 dark:border-amber-900/30 p-2.5 rounded-xl text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                              <AlertTriangle size={14} className="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400 stroke-[2.5]" />
+                              <div className="space-y-0.5 text-[11px] leading-snug">
+                                <span className="font-extrabold block">এই ড্রাইভারটি অন্য ইউজারের কাছেও আছে:</span>
+                                <span className="font-medium">
+                                  Also registered with: <span className="font-bold">{otherOwners.map(o => o.email ? (o.name && !o.name.startsWith('Manager (') ? `${o.name} (${o.email})` : o.email) : (o.name || "Fleet Partner")).join(", ")}</span>
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   );

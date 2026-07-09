@@ -441,6 +441,9 @@ export function listenToAuth(callback: (user: any) => void) {
   }
 
   return auth.onAuthStateChanged((user: any) => {
+    if (user) {
+      registerMockUser(user.uid, user.displayName || user.email?.split('@')[0] || 'Manager', user.email || '');
+    }
     callback(user);
   });
 }
@@ -1490,13 +1493,147 @@ export async function updateUserProfile(uid: string, displayName: string): Promi
 }
 
 /**
+ * Helper types and function for grouping driver profiles that represent the same physical person.
+ */
+interface DriverWithOwner {
+  driver: Driver;
+  owner: SharedUserDetail;
+}
+
+interface DriverGroup {
+  uuids: Set<string>;
+  emails: Set<string>;
+  phones: Set<string>;
+  owners: SharedUserDetail[];
+  drivers: Driver[];
+}
+
+function groupDrivers(list: DriverWithOwner[]): DriverGroup[] {
+  const groups: DriverGroup[] = [];
+
+  list.forEach(({ driver, owner }) => {
+    const email = driver.email?.trim().toLowerCase();
+    const phone = driver.phone?.replace(/\D/g, '');
+    const uuid = driver.uuid;
+
+    // Find all groups that match this driver by uuid, email, or phone
+    const matchingGroupIndices: number[] = [];
+    groups.forEach((g, idx) => {
+      const matchUuid = uuid && g.uuids.has(uuid);
+      const matchEmail = email && g.emails.has(email);
+      const matchPhone = phone && g.phones.has(phone);
+      if (matchUuid || matchEmail || matchPhone) {
+        matchingGroupIndices.push(idx);
+      }
+    });
+
+    if (matchingGroupIndices.length === 0) {
+      // Create new group
+      const newGroup: DriverGroup = {
+        uuids: new Set(uuid ? [uuid] : []),
+        emails: new Set(email ? [email] : []),
+        phones: new Set(phone ? [phone] : []),
+        owners: [owner],
+        drivers: [driver]
+      };
+      groups.push(newGroup);
+    } else if (matchingGroupIndices.length === 1) {
+      // Add to single matching group
+      const g = groups[matchingGroupIndices[0]];
+      if (uuid) g.uuids.add(uuid);
+      if (email) g.emails.add(email);
+      if (phone) g.phones.add(phone);
+      if (!g.owners.some(o => o.uid === owner.uid || (o.email && o.email.toLowerCase() === owner.email?.toLowerCase()))) {
+        g.owners.push(owner);
+      }
+      g.drivers.push(driver);
+    } else {
+      // Merge multiple matching groups
+      const firstIdx = matchingGroupIndices[0];
+      const targetGroup = groups[firstIdx];
+
+      for (let i = 1; i < matchingGroupIndices.length; i++) {
+        const otherIdx = matchingGroupIndices[i];
+        const otherGroup = groups[otherIdx];
+
+        otherGroup.uuids.forEach(u => targetGroup.uuids.add(u));
+        otherGroup.emails.forEach(e => targetGroup.emails.add(e));
+        otherGroup.phones.forEach(p => targetGroup.phones.add(p));
+        otherGroup.owners.forEach(o => {
+          if (!targetGroup.owners.some(u => u.uid === o.uid || (u.email && u.email.toLowerCase() === o.email?.toLowerCase()))) {
+            targetGroup.owners.push(o);
+          }
+        });
+        targetGroup.drivers.push(...otherGroup.drivers);
+        (otherGroup as any).merged = true;
+      }
+
+      if (uuid) targetGroup.uuids.add(uuid);
+      if (email) targetGroup.emails.add(email);
+      if (phone) targetGroup.phones.add(phone);
+      if (!targetGroup.owners.some(o => o.uid === owner.uid || (o.email && o.email.toLowerCase() === owner.email?.toLowerCase()))) {
+        targetGroup.owners.push(owner);
+      }
+      targetGroup.drivers.push(driver);
+
+      // Remove merged groups from array
+      for (let i = groups.length - 1; i >= 0; i--) {
+        if ((groups[i] as any).merged) {
+          groups.splice(i, 1);
+        }
+      }
+    }
+  });
+
+  return groups;
+}
+
+/**
  * Compiles a dictionary mapping driverUuid to the details of all users that have that driver.
  */
 export async function getSharedDriversMap(): Promise<Record<string, SharedUserDetail[]>> {
-  const sharedMap: Record<string, SharedUserDetail[]> = {};
+  const allDriversWithOwners: DriverWithOwner[] = [];
+  let useFirestore = !isSimulated && db && auth?.currentUser;
 
-  if (isSimulated || !db) {
-    // ── Simulated Mode ──
+  if (useFirestore) {
+    try {
+      const q = collectionGroup(db, 'drivers');
+      const qSnap = await getDocs(q);
+      const userCache: Record<string, SharedUserDetail> = {};
+
+      for (const docSnap of qSnap.docs) {
+        const drv = docSnap.data() as Driver;
+        if (drv.deleted) continue;
+
+        const ownerUid = docSnap.ref.parent.parent?.id;
+        if (!ownerUid) continue;
+
+        if (!userCache[ownerUid]) {
+          let name = `Manager (${ownerUid.substring(0, 6)})`;
+          let email = '';
+          try {
+            const userSnap = await getDoc(doc(db, 'users', ownerUid));
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              name = userData.displayName || userData.email?.split('@')[0] || name;
+              email = userData.email || email;
+            }
+          } catch (e) {
+            console.error('Failed fetching user doc for ownerUid:', ownerUid, e);
+          }
+          userCache[ownerUid] = { uid: ownerUid, name, email };
+        }
+
+        allDriversWithOwners.push({ driver: drv, owner: userCache[ownerUid] });
+      }
+    } catch (err) {
+      console.warn('Firestore getSharedDriversMap failed, falling back to local storage:', err);
+      useFirestore = false;
+    }
+  }
+
+  if (!useFirestore) {
+    // ── Simulated Mode (Local Storage Fallback) ──
     const registryRaw = localStorage.getItem('uber_mock_users_registry');
     const usersRegistry = registryRaw ? JSON.parse(registryRaw) : {};
 
@@ -1527,10 +1664,18 @@ export async function getSharedDriversMap(): Promise<Record<string, SharedUserDe
         const uid = key.replace('uber_driver_data_db_', '');
         if (!tempRegistry[uid]) {
           const storedName = localStorage.getItem(`displayName_${uid}`);
+          let email = '';
+          const credsRaw = localStorage.getItem('uber_supplier_creds_' + uid);
+          if (credsRaw) {
+            try {
+              const creds = JSON.parse(credsRaw);
+              email = creds.email || '';
+            } catch (_) {}
+          }
           tempRegistry[uid] = {
             uid,
-            name: storedName || `Manager (${uid.substring(0, 6)})`,
-            email: usersRegistry[uid]?.email || ''
+            name: storedName || (email ? email.split('@')[0] : `Manager (${uid.substring(0, 6)})`),
+            email: email
           };
         }
 
@@ -1540,12 +1685,7 @@ export async function getSharedDriversMap(): Promise<Record<string, SharedUserDe
             const driversDict = JSON.parse(driversData) as Record<string, Driver>;
             Object.values(driversDict).forEach(drv => {
               if (drv.deleted) return;
-              if (!sharedMap[drv.uuid]) {
-                sharedMap[drv.uuid] = [];
-              }
-              if (!sharedMap[drv.uuid].some(u => u.uid === uid)) {
-                sharedMap[drv.uuid].push(tempRegistry[uid]);
-              }
+              allDriversWithOwners.push({ driver: drv, owner: tempRegistry[uid] });
             });
           }
         } catch (e) {
@@ -1553,47 +1693,17 @@ export async function getSharedDriversMap(): Promise<Record<string, SharedUserDe
         }
       }
     }
-  } else {
-    // ── Real Firestore Mode ──
-    try {
-      const q = collectionGroup(db, 'drivers');
-      const qSnap = await getDocs(q);
-      const userCache: Record<string, SharedUserDetail> = {};
-
-      for (const docSnap of qSnap.docs) {
-        const drv = docSnap.data() as Driver;
-        if (drv.deleted) continue;
-
-        const ownerUid = docSnap.ref.parent.parent?.id;
-        if (!ownerUid) continue;
-
-        if (!userCache[ownerUid]) {
-          let name = `Manager (${ownerUid.substring(0, 6)})`;
-          let email = '';
-          try {
-            const userSnap = await getDoc(doc(db, 'users', ownerUid));
-            if (userSnap.exists()) {
-              const userData = userSnap.data();
-              name = userData.displayName || userData.email?.split('@')[0] || name;
-              email = userData.email || email;
-            }
-          } catch (e) {
-            console.error('Failed fetching user doc for ownerUid:', ownerUid, e);
-          }
-          userCache[ownerUid] = { uid: ownerUid, name, email };
-        }
-
-        if (!sharedMap[drv.uuid]) {
-          sharedMap[drv.uuid] = [];
-        }
-        if (!sharedMap[drv.uuid].some(u => u.uid === ownerUid)) {
-          sharedMap[drv.uuid].push(userCache[ownerUid]);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching collectionGroup drivers:', err);
-    }
   }
+
+  // Now group them to map each UUID to the combined owners list
+  const groups = groupDrivers(allDriversWithOwners);
+  const sharedMap: Record<string, SharedUserDetail[]> = {};
+
+  groups.forEach(g => {
+    g.uuids.forEach(uuid => {
+      sharedMap[uuid] = g.owners;
+    });
+  });
 
   return sharedMap;
 }
@@ -1605,14 +1715,62 @@ export async function searchUniversalDrivers(queryText: string): Promise<Univers
   const cleanQuery = queryText.trim().toLowerCase();
   if (!cleanQuery) return [];
 
-  const resultsMap: Record<string, UniversalSearchResult> = {};
   const sharedMap = await getSharedDriversMap();
+  const matchedDriversWithOwners: DriverWithOwner[] = [];
+  let useFirestore = !isSimulated && db && auth?.currentUser;
 
-  if (isSimulated || !db) {
-    // ── Simulated Mode ──
+  if (useFirestore) {
+    try {
+      const q = collectionGroup(db, 'drivers');
+      const qSnap = await getDocs(q);
+      const userCache: Record<string, SharedUserDetail> = {};
+
+      for (const docSnap of qSnap.docs) {
+        const drv = docSnap.data() as Driver;
+        if (drv.deleted) continue;
+
+        const matches = 
+          drv.name?.toLowerCase().includes(cleanQuery) ||
+          drv.email?.toLowerCase().includes(cleanQuery) ||
+          drv.phone?.toLowerCase().includes(cleanQuery) ||
+          drv.old_email?.toLowerCase().includes(cleanQuery) ||
+          drv.old_phone?.toLowerCase().includes(cleanQuery);
+
+        if (matches) {
+          const ownerUid = docSnap.ref.parent.parent?.id;
+          if (!ownerUid) continue;
+
+          if (!userCache[ownerUid]) {
+            let name = `Manager (${ownerUid.substring(0, 6)})`;
+            let email = '';
+            try {
+              const userSnap = await getDoc(doc(db, 'users', ownerUid));
+              if (userSnap.exists()) {
+                const userData = userSnap.data();
+                name = userData.displayName || userData.email?.split('@')[0] || name;
+                email = userData.email || email;
+              }
+            } catch (e) {
+              console.error('Failed fetching user doc for ownerUid:', ownerUid, e);
+            }
+            userCache[ownerUid] = { uid: ownerUid, name, email };
+          }
+
+          matchedDriversWithOwners.push({ driver: drv, owner: userCache[ownerUid] });
+        }
+      }
+    } catch (err) {
+      console.warn('Firestore searchUniversalDrivers failed, falling back to local storage:', err);
+      useFirestore = false;
+    }
+  }
+
+  if (!useFirestore) {
+    // ── Simulated Mode (Local Storage Fallback) ──
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('uber_driver_data_db_')) {
+        const uid = key.replace('uber_driver_data_db_', '');
         try {
           const driversData = localStorage.getItem(key);
           if (driversData) {
@@ -1628,17 +1786,13 @@ export async function searchUniversalDrivers(queryText: string): Promise<Univers
                 drv.old_phone?.toLowerCase().includes(cleanQuery);
 
               if (matches) {
-                if (!resultsMap[drv.uuid]) {
-                  resultsMap[drv.uuid] = {
-                    driver: drv,
-                    owners: sharedMap[drv.uuid] || []
-                  };
-                } else {
-                  // Keep the most recently updated driver profile for presentation
-                  if (new Date(drv.last_updated).getTime() > new Date(resultsMap[drv.uuid].driver.last_updated).getTime()) {
-                    resultsMap[drv.uuid].driver = drv;
-                  }
-                }
+                // Find owner details
+                const owner = sharedMap[drv.uuid]?.find(o => o.uid === uid) || {
+                  uid,
+                  name: `Manager (${uid.substring(0, 6)})`,
+                  email: ''
+                };
+                matchedDriversWithOwners.push({ driver: drv, owner });
               }
             });
           }
@@ -1647,40 +1801,25 @@ export async function searchUniversalDrivers(queryText: string): Promise<Univers
         }
       }
     }
-  } else {
-    // ── Real Firestore Mode ──
-    try {
-      const q = collectionGroup(db, 'drivers');
-      const qSnap = await getDocs(q);
-
-      for (const docSnap of qSnap.docs) {
-        const drv = docSnap.data() as Driver;
-        if (drv.deleted) continue;
-
-        const matches = 
-          drv.name?.toLowerCase().includes(cleanQuery) ||
-          drv.email?.toLowerCase().includes(cleanQuery) ||
-          drv.phone?.toLowerCase().includes(cleanQuery) ||
-          drv.old_email?.toLowerCase().includes(cleanQuery) ||
-          drv.old_phone?.toLowerCase().includes(cleanQuery);
-
-        if (matches) {
-          if (!resultsMap[drv.uuid]) {
-            resultsMap[drv.uuid] = {
-              driver: drv,
-              owners: sharedMap[drv.uuid] || []
-            };
-          } else {
-            if (new Date(drv.last_updated).getTime() > new Date(resultsMap[drv.uuid].driver.last_updated).getTime()) {
-              resultsMap[drv.uuid].driver = drv;
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error conducting universal search in Firestore:', err);
-    }
   }
 
-  return Object.values(resultsMap);
+  // Now group the matching driver profiles to collapse duplicates
+  const matchedGroups = groupDrivers(matchedDriversWithOwners);
+
+  const results: UniversalSearchResult[] = matchedGroups.map(g => {
+    // Select the best representative driver profile (latest last_updated)
+    let bestDriver = g.drivers[0];
+    g.drivers.forEach(d => {
+      if (new Date(d.last_updated).getTime() > new Date(bestDriver.last_updated).getTime()) {
+        bestDriver = d;
+      }
+    });
+
+    return {
+      driver: bestDriver,
+      owners: g.owners
+    };
+  });
+
+  return results;
 }
