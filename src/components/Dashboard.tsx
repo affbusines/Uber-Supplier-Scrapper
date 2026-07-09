@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Driver } from "../types";
 import Avatar from "./Avatar";
@@ -119,12 +119,14 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   const [activeFilterTripCount, setActiveFilterTripCount] = useState<string>("");
   const [activeFilterTripActivity, setActiveFilterTripActivity] = useState<string>("");
   const [activeFilterRewardStatus, setActiveFilterRewardStatus] = useState<string>("");
+  const [activeFilterFlow, setActiveFilterFlow] = useState<string>("");
 
   const [tempFilterStatus, setTempFilterStatus] = useState<string>("");
   const [tempFilterContactChange, setTempFilterContactChange] = useState<string>("");
   const [tempFilterTripCount, setTempFilterTripCount] = useState<string>("");
   const [tempFilterTripActivity, setTempFilterTripActivity] = useState<string>("");
   const [tempFilterRewardStatus, setTempFilterRewardStatus] = useState<string>("");
+  const [tempFilterFlow, setTempFilterFlow] = useState<string>("");
   const [sortBy, setSortBy] = useState<"trips_desc" | "trips_asc" | "name_asc" | "newest_desc">("trips_desc");
   
   // Sub-tabs state
@@ -134,6 +136,27 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   // Driver Details State
   const [currentDriverDetail, setCurrentDriverDetail] = useState<Driver | null>(null);
   const [detailTab, setDetailTab] = useState<'info' | 'rewards'>('info');
+
+  // Scroll position refs and callback refs for the drivers list view
+  const driversListScrollRef = useRef<number>(0);
+  const driversListInnerScrollRef = useRef<number>(0);
+
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+  const listInnerContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const setListContainer = useCallback((node: HTMLDivElement | null) => {
+    listContainerRef.current = node;
+    if (node) {
+      node.scrollTop = driversListScrollRef.current;
+    }
+  }, []);
+
+  const setListInnerContainer = useCallback((node: HTMLDivElement | null) => {
+    listInnerContainerRef.current = node;
+    if (node) {
+      node.scrollTop = driversListInnerScrollRef.current;
+    }
+  }, []);
 
   // Modals & Action States
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -295,6 +318,7 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       setTempFilterTripCount(activeFilterTripCount);
       setTempFilterTripActivity(activeFilterTripActivity);
       setTempFilterRewardStatus(activeFilterRewardStatus);
+      setTempFilterFlow(activeFilterFlow);
     }
   }, [showFilterModal]);
 
@@ -361,7 +385,15 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
   // Reset page to 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterMode, sortBy, showDeleted, activeFilterStatus, activeFilterContactChange, activeFilterTripCount, activeFilterTripActivity, activeFilterRewardStatus]);
+  }, [searchQuery, filterMode, sortBy, showDeleted, activeFilterStatus, activeFilterContactChange, activeFilterTripCount, activeFilterTripActivity, activeFilterRewardStatus, activeFilterFlow]);
+
+  // Reset saved scroll positions when filters, page, or sort changes
+  useEffect(() => {
+    driversListScrollRef.current = 0;
+    driversListInnerScrollRef.current = 0;
+    if (listContainerRef.current) listContainerRef.current.scrollTop = 0;
+    if (listInnerContainerRef.current) listInnerContainerRef.current.scrollTop = 0;
+  }, [currentPage, searchQuery, filterMode, sortBy, showDeleted, activeFilterStatus, activeFilterContactChange, activeFilterTripCount, activeFilterTripActivity, activeFilterRewardStatus, activeFilterFlow]);
 
   const showToast = (type: "success" | "info" | "error", msg: string) => {
     setToast({ type, message: msg });
@@ -530,6 +562,17 @@ export default function Dashboard({ activeSubView = 'home', onNavigate, onOpenMe
       if (activeFilterRewardStatus === "Expired" && !drv.reward.expired) return false;
       if (activeFilterRewardStatus === "F10" && (!drv.reward.active || (!drv.reward.f10_done && (drv.tip_count - drv.reward.start_tip_count) < 10))) return false;
       if (activeFilterRewardStatus === "F50" && (!drv.reward.active || (!drv.reward.f50_done && (drv.tip_count - drv.reward.start_tip_count) < 50))) return false;
+    }
+
+    if (activeFilterFlow && activeFilterFlow !== "All") {
+      const flowVal = (drv.flow || "").toLowerCase();
+      if (activeFilterFlow === "Motorbike") {
+        if (!flowVal.includes("moto") && !flowVal.includes("bike") && !flowVal.includes("scooter")) return false;
+      } else if (activeFilterFlow === "Private Car") {
+        if (!flowVal.includes("car")) return false;
+      } else if (activeFilterFlow === "Auto Rickshaw") {
+        if (!flowVal.includes("auto") && !flowVal.includes("cng") && !flowVal.includes("rickshaw") && !flowVal.includes("অটোরিকশা")) return false;
+      }
     }
 
     return true;
@@ -1664,7 +1707,13 @@ ${cardsHTML}
   // ────────────────────────────────────────────────────────
   const renderDriversListView = () => {
     return (
-      <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar">
+      <div 
+        ref={setListContainer}
+        onScroll={(e) => {
+          driversListScrollRef.current = e.currentTarget.scrollTop;
+        }}
+        className="flex-1 flex flex-col bg-white dark:bg-zinc-950 overflow-y-auto no-scrollbar"
+      >
         {/* Header */}
         <header className="px-6 py-5 flex items-center justify-between glass-header border-b border-zinc-150/80 dark:border-zinc-800/80 shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-3">
@@ -1754,7 +1803,7 @@ ${cardsHTML}
               </div>
 
               {/* Active filters row */}
-              {(activeFilterStatus || activeFilterContactChange || activeFilterTripCount || activeFilterTripActivity || activeFilterRewardStatus) && (
+              {(activeFilterStatus || activeFilterContactChange || activeFilterTripCount || activeFilterTripActivity || activeFilterRewardStatus || activeFilterFlow) && (
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 select-none shrink-0 flex-wrap">
                   {activeFilterStatus && (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-850 text-zinc-850 dark:text-zinc-200 flex items-center gap-1.5">
@@ -1796,6 +1845,14 @@ ${cardsHTML}
                       </button>
                     </span>
                   )}
+                  {activeFilterFlow && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-900 border border-zinc-250 dark:border-zinc-850 text-zinc-850 dark:text-zinc-200 flex items-center gap-1.5">
+                      Flow: {activeFilterFlow}
+                      <button onClick={() => setActiveFilterFlow("")} className="hover:text-red-500 cursor-pointer">
+                        <X size={10} className="stroke-[3]" />
+                      </button>
+                    </span>
+                  )}
                   <button
                     onClick={() => {
                       setActiveFilterStatus("");
@@ -1803,6 +1860,7 @@ ${cardsHTML}
                       setActiveFilterTripCount("");
                       setActiveFilterTripActivity("");
                       setActiveFilterRewardStatus("");
+                      setActiveFilterFlow("");
                     }}
                     className="text-[10px] font-black uppercase text-zinc-400 hover:text-black dark:hover:text-white cursor-pointer px-1.5"
                   >
@@ -1812,7 +1870,13 @@ ${cardsHTML}
               )}
 
               {/* Driver list container */}
-              <div className="flex-1 space-y-4 overflow-y-auto no-scrollbar py-1">
+              <div 
+                ref={setListInnerContainer}
+                onScroll={(e) => {
+                  driversListInnerScrollRef.current = e.currentTarget.scrollTop;
+                }}
+                className="flex-1 space-y-4 overflow-y-auto no-scrollbar py-1"
+              >
                 {loading ? (
                   <div className="py-12 flex flex-col items-center justify-center text-zinc-400 space-y-2">
                     <RefreshCw className="animate-spin text-zinc-500" size={24} />
@@ -2146,6 +2210,7 @@ ${cardsHTML}
                         setTempFilterTripCount("");
                         setTempFilterTripActivity("");
                         setTempFilterRewardStatus("");
+                        setTempFilterFlow("");
                       }}
                       className="interactive-button text-xs font-bold text-zinc-400 hover:text-black dark:hover:text-white transition"
                     >
@@ -2280,6 +2345,31 @@ ${cardsHTML}
                         ))}
                       </div>
                     </div>
+
+                    <hr className="border-zinc-100 dark:border-zinc-800" />
+
+                    {/* Flow Group */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Flow</h3>
+                      <div className="space-y-1">
+                        {["All", "Motorbike", "Private Car", "Auto Rickshaw"].map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setTempFilterFlow(tempFilterFlow === opt ? "" : opt)}
+                            className="w-full flex items-center justify-between py-2 text-left font-bold text-[13.5px] text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                          >
+                            <span>{opt}</span>
+                            <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+                              tempFilterFlow === opt
+                                ? "border-black dark:border-white bg-black dark:bg-white"
+                                : "border-zinc-300 dark:border-zinc-700"
+                            }`}>
+                              {tempFilterFlow === opt && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Footer */}
@@ -2291,6 +2381,7 @@ ${cardsHTML}
                         setActiveFilterTripCount(tempFilterTripCount);
                         setActiveFilterTripActivity(tempFilterTripActivity);
                         setActiveFilterRewardStatus(tempFilterRewardStatus);
+                        setActiveFilterFlow(tempFilterFlow);
                         setFilterMode("all"); // reset legacy filterMode
                         setShowFilterModal(false);
                       }}
