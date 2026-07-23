@@ -1877,6 +1877,25 @@ ${cardsHTML}
                 }}
                 className="flex-1 space-y-4 overflow-y-auto no-scrollbar py-1"
               >
+                {sortedDrivers.length > 0 && !loading && (
+                  <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 select-none shrink-0">
+                    <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-black dark:text-white">
+                      <input
+                        type="checkbox"
+                        checked={sortedDrivers.length > 0 && sortedDrivers.every(d => selectedIds.has(d.uuid))}
+                        onChange={() => handleSelectAll(sortedDrivers)}
+                        className="w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 text-black focus:ring-black cursor-pointer"
+                      />
+                      <span>Select All ({sortedDrivers.length} Drivers)</span>
+                    </label>
+                    {selectedIds.size > 0 && (
+                      <span className="text-xs font-mono font-bold text-zinc-500">
+                        {selectedIds.size} Selected
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {loading ? (
                   <div className="py-12 flex flex-col items-center justify-center text-zinc-400 space-y-2">
                     <RefreshCw className="animate-spin text-zinc-500" size={24} />
@@ -1890,6 +1909,7 @@ ${cardsHTML}
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {paginatedDrivers.map((drv) => {
+                      const isSelected = selectedIds.has(drv.uuid);
                       return (
                         <div 
                           key={drv.uuid}
@@ -1898,12 +1918,29 @@ ${cardsHTML}
                             setDetailTab('info');
                           }}
                           className={`bg-white dark:bg-zinc-900 border rounded-2xl p-5 shadow-xs transition-all cursor-pointer relative interactive-button flex flex-col gap-4 hover:border-zinc-300 dark:hover:border-zinc-700 ${
-                            drv.has_contact_change ? 'border-amber-200 bg-amber-50/10 dark:bg-amber-950/10' : 'border-zinc-150 dark:border-zinc-800'
+                            isSelected 
+                              ? 'border-black dark:border-white ring-2 ring-black/10 dark:ring-white/10 bg-zinc-50/50 dark:bg-zinc-900/80' 
+                              : drv.has_contact_change ? 'border-amber-200 bg-amber-50/10 dark:bg-amber-950/10' : 'border-zinc-150 dark:border-zinc-800'
                           }`}
                         >
                           {/* Avatar & Name Header */}
                           <div className="flex items-center gap-3.5 justify-between">
                             <div className="flex items-center gap-3.5 min-w-0">
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleRow(drv.uuid);
+                                }}
+                                className="shrink-0 p-1 cursor-pointer"
+                                title={isSelected ? "Deselect driver" : "Select driver"}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  className="w-4.5 h-4.5 rounded border-zinc-300 dark:border-zinc-700 text-black focus:ring-black cursor-pointer"
+                                />
+                              </div>
                               <Avatar 
                                 photoUrl={drv.photo_url} 
                                 name={drv.name} 
@@ -2852,6 +2889,14 @@ ${cardsHTML}
               </button>
             </div>
 
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
+                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mr-2">{selectedIds.size} selected</span>
+                <button className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold transition">Delete</button>
+                <button className="bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-black dark:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">Export</button>
+              </div>
+            )}
+
             <div className="bg-zinc-100 dark:bg-zinc-900 rounded-lg p-2 px-3.5 text-xs font-bold text-black dark:text-white flex items-center gap-2 cursor-pointer hover:bg-zinc-150 dark:hover:bg-zinc-800">
               <Calendar size={13} />
               <span>2026/06/14 - 2026/06/14</span>
@@ -2865,6 +2910,14 @@ ${cardsHTML}
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-150 dark:border-zinc-800 text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <th className="w-10 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={paginatedDrivers.length > 0 && paginatedDrivers.every(d => selectedIds.has(d.uuid))}
+                        onChange={() => handleSelectAll(paginatedDrivers)}
+                        className="w-4 h-4 rounded border-zinc-300 text-black focus:ring-black cursor-pointer"
+                      />
+                    </th>
                     <th className="font-bold py-3">Name</th>
                     <th className="font-bold text-right py-3">Total Earnings</th>
                     <th className="font-bold text-right py-3">Earnings / hr</th>
@@ -2889,6 +2942,14 @@ ${cardsHTML}
 
                     return (
                       <tr key={drv.uuid} className="hover:bg-zinc-50/40 dark:hover:bg-zinc-900/40 transition">
+                        <td className="py-4 text-center border-b border-zinc-100 dark:border-zinc-800">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(drv.uuid)}
+                            onChange={() => handleToggleRow(drv.uuid)}
+                            className="w-4 h-4 rounded border-zinc-300 text-black focus:ring-black cursor-pointer"
+                          />
+                        </td>
                         <td className="py-4 font-sans font-extrabold text-black dark:text-white border-b border-zinc-100 dark:border-zinc-800">
                           <div className="flex items-center gap-3">
                             <Avatar 
@@ -3933,6 +3994,9 @@ ${cardsHTML}
           {renderActiveSubViewContent()}
         </motion.div>
       </AnimatePresence>
+
+      {/* Floating Bulk Operations Toolbar */}
+      {renderBulkOperationsBar()}
 
       {/* ────────────────────────────────────────────────────────
           STANDARD COMPLIANCE MODALS (RETAINED FROM ORIGINAL)
