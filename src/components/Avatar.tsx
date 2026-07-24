@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AvatarProps {
   photoUrl: string | null | undefined;
@@ -23,7 +23,7 @@ export function getAvatarColor(name: string): string {
     "#4b4b4b", // Hairline Mid
     "#5e5e5e", // Body Gray
   ];
-  const index = name.charCodeAt(0) % colors.length;
+  const index = (name || "").charCodeAt(0) % colors.length;
   return colors[index];
 }
 
@@ -34,24 +34,38 @@ export default function Avatar({
   className = "",
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState<string | null>(null);
 
-  let cleanPhotoUrl = photoUrl;
-  if (cleanPhotoUrl) {
-    if (cleanPhotoUrl.startsWith('//')) {
-      cleanPhotoUrl = 'https:' + cleanPhotoUrl;
-    } else if (cleanPhotoUrl.startsWith('http://')) {
-      cleanPhotoUrl = cleanPhotoUrl.replace('http://', 'https://');
+  useEffect(() => {
+    let clean = photoUrl;
+    if (clean) {
+      if (clean.startsWith('//')) {
+        clean = 'https:' + clean;
+      } else if (clean.startsWith('http://')) {
+        clean = clean.replace('http://', 'https://');
+      }
     }
-  }
+    setCurrentSrc(clean || null);
+    setImgError(false);
+  }, [photoUrl]);
 
-  if (cleanPhotoUrl && !imgError) {
+  const handleImgError = () => {
+    // If remote HTTP photo fails to load (e.g. expired CloudFront signature), try proxy fallback before initials
+    if (currentSrc && (currentSrc.startsWith("http://") || currentSrc.startsWith("https://")) && !currentSrc.includes("/api/proxy-avatar")) {
+      setCurrentSrc(`/api/proxy-avatar?url=${encodeURIComponent(currentSrc)}`);
+    } else {
+      setImgError(true);
+    }
+  };
+
+  if (currentSrc && !imgError) {
     return (
       <img
-        src={cleanPhotoUrl}
+        src={currentSrc}
         alt={name}
         className={`rounded-full shrink-0 object-cover ${className}`}
         style={{ width: size, height: size }}
-        onError={() => setImgError(true)} // fallback on error (e.g. expired expired CloudFront CDN link)
+        onError={handleImgError}
         referrerPolicy="no-referrer"
       />
     );

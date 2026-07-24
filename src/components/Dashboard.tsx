@@ -4058,6 +4058,17 @@ ${cardsHTML}
               </div>
 
               <div>
+                <label className="block text-zinc-700 font-bold mb-1">Total Tips (Trips Count)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingDriver.tip_count ?? 0}
+                  onChange={(e) => setEditingDriver({ ...editingDriver, tip_count: Math.max(0, parseInt(e.target.value) || 0) })}
+                  className="w-full bg-zinc-100 border-none rounded-lg p-2 text-xs font-semibold focus:ring-1 focus:ring-black outline-none"
+                />
+              </div>
+
+              <div>
                 <label className="block text-zinc-700 font-bold mb-1">Status</label>
                 <select
                   value={editingDriver.status || "Active"}
@@ -4091,6 +4102,7 @@ ${cardsHTML}
                       email: editingDriver.email.trim(),
                       phone: editingDriver.phone.trim(),
                       status: editingDriver.status || "Active",
+                      tip_count: editingDriver.tip_count ?? 0,
                     });
                     showToast("success", `Updated ${editingDriver.name} successfully!`);
                     setEditingDriver(null);
@@ -4101,6 +4113,7 @@ ${cardsHTML}
                         email: editingDriver.email.trim(),
                         phone: editingDriver.phone.trim(),
                         status: editingDriver.status || "Active",
+                        tip_count: editingDriver.tip_count ?? 0,
                       });
                     }
                   } catch (e) {

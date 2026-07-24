@@ -457,12 +457,12 @@ export async function resetDatabase() {
 }
 
 /**
- * Manually edit driver details (name, email, phone)
+ * Manually edit driver details (name, email, phone, status, tip_count)
  * and preserve historical change tracking.
  */
 export async function editDriver(
   uuid: string,
-  newValues: { name: string; email: string; phone: string; status?: 'Active' | 'Applied' | 'Waitlisted' | 'Rejected' }
+  newValues: { name: string; email: string; phone: string; status?: 'Active' | 'Applied' | 'Waitlisted' | 'Rejected'; tip_count?: number }
 ): Promise<void> {
   const nowStr = new Date().toISOString();
   let existingDrivers: Record<string, Driver> = {};
@@ -479,6 +479,20 @@ export async function editDriver(
           last_updated: nowStr,
           edited_manually: true
         };
+
+        if (newValues.tip_count !== undefined) {
+          updates.tip_count = newValues.tip_count;
+          if (existing.reward && existing.reward.active) {
+            const remaining = existing.reward.next_reward_at - newValues.tip_count;
+            const completed = remaining <= 0;
+            updates.reward = {
+              ...existing.reward,
+              trips_remaining: completed ? 0 : remaining,
+              completed,
+              last_calculated_at: nowStr
+            };
+          }
+        }
 
         if (newValues.email !== existing.email) {
           updates.old_email = existing.email;
@@ -510,6 +524,20 @@ export async function editDriver(
       edited_manually: true
     };
 
+    if (newValues.tip_count !== undefined) {
+      updates.tip_count = newValues.tip_count;
+      if (existing.reward && existing.reward.active) {
+        const remaining = existing.reward.next_reward_at - newValues.tip_count;
+        const completed = remaining <= 0;
+        updates.reward = {
+          ...existing.reward,
+          trips_remaining: completed ? 0 : remaining,
+          completed,
+          last_calculated_at: nowStr
+        };
+      }
+    }
+
     if (newValues.email !== existing.email) {
       updates.old_email = existing.email;
       updates.email = newValues.email;
@@ -527,7 +555,8 @@ export async function editDriver(
       ...updates
     };
     saveLocalDrivers(existingDrivers);
-    addDriverAuditLogEntry(uuid, 'Driver edited', 'Name: ' + newValues.name + ', Phone: ' + newValues.phone + ', Email: ' + newValues.email);
+    const auditDetails = 'Name: ' + newValues.name + ', Phone: ' + newValues.phone + ', Email: ' + newValues.email + (newValues.tip_count !== undefined ? ', Total Tips: ' + newValues.tip_count : '');
+    addDriverAuditLogEntry(uuid, 'Driver edited', auditDetails);
     window.dispatchEvent(new Event('driver_db_updated'));
   }
 }
